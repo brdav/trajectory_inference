@@ -109,7 +109,7 @@ def process_files(rank, p_rank, args, file_queue, model):
         shuffle=False,
         drop_last=False,
         pin_memory=True,
-        persistent_workers=args.num_workers > 0,
+        persistent_workers=False  # no data updates when True: args.num_workers > 0,
     )
 
     while not file_queue.empty():
