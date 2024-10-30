@@ -34,7 +34,7 @@ cd depth_anything_v2
 pip install -r requirements.txt
 ```
 
-Download the V2-Large model from https://github.com/DepthAnything/Depth-Anything-V2
+Download the V2-Large model from [here](https://github.com/DepthAnything/Depth-Anything-V2/tree/main/metric_depth)
 
 ## How to run
 
