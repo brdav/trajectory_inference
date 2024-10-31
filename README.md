@@ -19,7 +19,7 @@ python geocalib_inference.py \
     --num-gpus 1 \
     --num-proc-per-gpu 1 \
     --batch-size 50 \
-    --num-workers 1 \
+    --camera-model "pinhole" \
     --no-profiler
 ```
 
