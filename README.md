@@ -11,14 +11,14 @@ python -m pip install -e "git+https://github.com/cvg/GeoCalib#egg=geocalib"
 
 When running on multiple GPUs, change `num-gpus`. Try to get batchsize==50 by using GPUs with 24 GB memory.
 ```
-python geocalib_inference.py \
+python geocalib_inference_v2.py \
     --exp-name "exp_name" \
-    --save-dir "./output" \
     --file-list "list_of_file_paths.txt" \
     --log-dir "./logs" \
     --num-gpus 1 \
     --num-proc-per-gpu 1 \
     --batch-size 50 \
+    --num-workers 4 \
     --camera-model "pinhole" \
     --no-profiler
 ```
