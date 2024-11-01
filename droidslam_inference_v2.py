@@ -168,7 +168,6 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
     crop_width = resize_width - resize_width % 8
 
     # each process assigns num_workers workers for data loading
-    # if num_workers=0, main process handles loading
     dataset = H5Dataset(
         file_paths,
         resize_size=[resize_height, resize_width],
@@ -214,12 +213,12 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
                         tmp = trajectory_file["merged_trajectory"][num_written - 1]
                     assert not np.array_equal(tmp, np.zeros_like(tmp))
                     print(
-                        f"Trajectory H5 file for {os.path.basename(file_path)} already processed, skipping!"
+                        f"Trajectory H5 file for {file_path} already processed, skipping!"
                     )
                     continue
                 except Exception as e:
                     print(
-                        f"Trajectory H5 file for {os.path.basename(file_path)} seems to be corrupt. Will overwrite."
+                        f"Trajectory H5 file for {file_path} seems to be corrupt. Will overwrite."
                     )
                     os.remove(
                         os.path.join(
@@ -349,11 +348,9 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
 
         except Exception as e:
             print(e)
-            print(
-                f"Error processing trajectory for {os.path.basename(file_path)}. Moving on."
-            )
+            print(f"Error processing trajectory for {file_path}. Moving on.")
             with open(os.path.join(args.log_dir, "failed_trajectory.txt"), "a") as f:
-                f.write(file_path + "\n")
+                f.write(f"{file_path} REASON: {e}\n")
 
     if (not args.no_profiler) and (rank == 0):
         prof.stop()
@@ -366,6 +363,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    assert args.num_workers > 0
     assert args.min_trajectory_length <= args.trajectory_length
 
     print("Starting job with the following parameters:")

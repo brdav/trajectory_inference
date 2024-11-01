@@ -115,7 +115,6 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
     model = model.to(f"cuda:{rank}").eval()
 
     # each process assigns num_workers workers for data loading
-    # if num_workers=0, main process handles loading
     dataset = H5Dataset(file_paths)
     data_loader = DataLoader(
         dataset,
@@ -154,13 +153,11 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                         num_written = depth_file["num_written"][0]
                         tmp = depth_file["depth"][num_written - 1]
                     assert not np.array_equal(tmp, np.zeros_like(tmp))
-                    print(
-                        f"Depth H5 file for {os.path.basename(file_path)} already processed, skipping!"
-                    )
+                    print(f"Depth H5 file for {file_path} already processed, skipping!")
                     continue
                 except Exception as e:
                     print(
-                        f"Depth H5 file for {os.path.basename(file_path)} seems to be corrupt. Will overwrite."
+                        f"Depth H5 file for {file_path} seems to be corrupt. Will overwrite."
                     )
                     os.remove(
                         os.path.join(
@@ -225,11 +222,9 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
 
         except Exception as e:
             print(e)
-            print(
-                f"Error processing depth for {os.path.basename(file_path)}. Moving on."
-            )
+            print(f"Error processing depth for {file_path}. Moving on.")
             with open(os.path.join(args.log_dir, "failed_depth.txt"), "a") as f:
-                f.write(file_path + "\n")
+                f.write(f"{file_path} REASON: {e}\n")
 
     if (not args.no_profiler) and (rank == 0):
         prof.stop()
@@ -241,6 +236,8 @@ if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
 
     args = parser.parse_args()
+
+    assert args.num_workers > 0
 
     print("Starting job with the following parameters:")
     print(f"exp-name: {args.exp_name}")

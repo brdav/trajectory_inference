@@ -13,7 +13,7 @@ from torch.profiler import profile, ProfilerActivity
 from geocalib import GeoCalib
 
 
-parser = argparse.ArgumentParser(prog="GeoCalib_inference_fixed")
+parser = argparse.ArgumentParser(prog="GeoCalib_inference")
 # paths
 parser.add_argument("--file-list", type=str, default="./h5_file_list.txt")
 # tuning parameters
@@ -94,7 +94,6 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
     model = model.to(f"cuda:{rank}")
 
     # each process assigns num_workers workers for data loading
-    # if num_workers=0, main process handles loading
     dataset = H5Dataset(file_paths)
     data_loader = DataLoader(
         dataset,
@@ -116,14 +115,6 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
         try:  # catch all errors
             file_path = file_paths[file_idx]
 
-            # assign file to dataloader
-            v_file_idx.value = file_idx
-
-            with h5py.File(file_path, "r") as f:
-                num_written = f["num_written"][0]
-            # data_loader._iterator._index_sampler.dataset_len = num_written
-            data_loader._index_sampler.sampler.dataset_len = num_written
-
             # check if file is already processed
             if os.path.exists(
                 os.path.join(
@@ -140,13 +131,11 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                     ) as calib_file:
                         K = calib_file["camera"][:]
                     assert K.shape == (3, 3)
-                    print(
-                        f"Calib H5 file for {os.path.basename(file_path)} already processed, skipping!"
-                    )
+                    print(f"Calib H5 file for {file_path} already processed, skipping!")
                     continue
                 except Exception as e:
                     print(
-                        f"Calib H5 file for {os.path.basename(file_path)} seems to be corrupt. Will overwrite."
+                        f"Calib H5 file for {file_path} seems to be corrupt. Will overwrite."
                     )
                     os.remove(
                         os.path.join(
@@ -154,6 +143,13 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                             f"camera_{os.path.basename(file_path)}",
                         )
                     )
+
+            with h5py.File(file_path, "r") as f:
+                num_written = f["num_written"][0]
+
+            # assign file to dataloader
+            v_file_idx.value = file_idx
+            data_loader._index_sampler.sampler.dataset_len = num_written
 
             # open target h5
             with h5py.File(
@@ -212,11 +208,9 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
 
         except Exception as e:
             print(e)
-            print(
-                f"Error processing calib for {os.path.basename(file_path)}. Moving on."
-            )
+            print(f"Error processing calib for {file_path}. Moving on.")
             with open(os.path.join(args.log_dir, "failed_calib.txt"), "a") as f:
-                f.write(file_path + "\n")
+                f.write(f"{file_path} REASON: {e}\n")
 
     if (not args.no_profiler) and (rank == 0):
         prof.stop()
@@ -228,6 +222,8 @@ if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
 
     args = parser.parse_args()
+
+    assert args.num_workers > 0
 
     print("Starting job with the following parameters:")
     print(f"exp-name: {args.exp_name}")
