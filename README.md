@@ -2,74 +2,27 @@
 
 ## Setup
 
-Clone with `--recursive` flag.
-
-In an environment with Python==3.9:
-
+Clone the repository:
 ```
-pip install -r requirements.txt
-# droidslam
-pip install torch-scatter
-pip install xformers == 0.0.21  # double check
+git clone --recursive git@github.com:brdav/trajectory_inference.git
+```
+
+In an environment with Python>=3.9 and CUDA 12.1:
+```
+pip3 install torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cu121
+pip3 install opencv-python h5py scipy tensorboard
+pip3 install torch_scatter -f https://data.pyg.org/whl/torch-2.1.0+cu121.html
+pip3 install xformers==0.0.23.post1 --index-url https://download.pytorch.org/whl/cu121
+python3 -m pip install -e "git+https://github.com/cvg/GeoCalib#egg=geocalib"
 cd droid_trajectory/droid_slam
-python setup.py install
-# geocalib
-python -m pip install -e "git+https://github.com/cvg/GeoCalib#egg=geocalib"
+python3 setup.py install
 ```
 
-Download the V2-Large model from [here](https://github.com/DepthAnything/Depth-Anything-V2/tree/main/metric_depth).
-Download the droid.pth checkpoint from [here](https://github.com/princeton-vl/DROID-SLAM)
+Download the outdoor model checkpoints from [here](https://github.com/DepthAnything/Depth-Anything-V2/tree/main/metric_depth).
+
+Download the droid.pth checkpoint from [here](https://github.com/princeton-vl/DROID-SLAM).
 
 
-## Run GeoCalib
+## How to Run
 
-When running on multiple GPUs, change `num-gpus`. Try to get `batch-size 50` by using GPUs with 24 GB memory. If larger GPU, increase `num-proc-per-gpu`.
-```
-python geocalib_inference_v2.py \
-    --exp-name "exp_name" \
-    --file-list "list_of_file_paths.txt" \
-    --log-dir "./logs" \
-    --num-gpus 1 \
-    --num-proc-per-gpu 1 \
-    --batch-size 50 \
-    --num-workers 4 \
-    --camera-model "pinhole" \
-    --no-profiler
-```
-
-
-## Run DepthAnythingV2
-
-When running on multiple GPUs, change `num-gpus`. Try to max out batchsize and then also pick a large buffer size if possible.
-```
-python depthanything_inference_v2.py \
-    --exp-name "exp_name" \
-    --file-list "list_of_file_paths.txt" \
-    --weights-dir "/dir/to/checkpoint" \
-    --log-dir "./logs" \
-    --num-gpus 1 \
-    --num-proc-per-gpu 1 \
-    --buffer-size 2048 \
-    --batch-size 32 \
-    --num-workers 8 \
-    --no-profiler
-```
-
-
-## Run DroidSLAM
-
-Run with `trajectory-length 4000`, takes about 24GB if h5 video has >4000 frames. If larger GPU, increase `num-proc-per-gpu`.
-```
-python droidslam_inference_v2.py \
-    --exp-name "exp_name" \
-    --file-list "list_of_file_paths.txt" \
-    --weights "/path/to/droid.pth" \
-    --log-dir "./logs" \
-    --num-gpus 1 \
-    --num-proc-per-gpu 1 \
-    --trajectory-length 4000 \
-    --trajectory-overlap 100 \
-    --min-trajectory-length 100 \
-    --num-workers 2 \
-    --no-profiler
-```
+Check `run_trajectory_inference.sbatch`.

@@ -209,7 +209,9 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
         except Exception as e:
             print(e)
             print(f"Error processing calib for {file_path}. Moving on.")
-            with open(os.path.join(args.log_dir, "failed_calib.txt"), "a") as f:
+            with open(
+                os.path.join(args.log_dir, f"{args.exp_name}_failed_calib.txt"), "a"
+            ) as f:
                 f.write(f"{file_path} REASON: {e}\n")
 
     if (not args.no_profiler) and (rank == 0):

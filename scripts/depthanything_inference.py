@@ -30,6 +30,7 @@ parser.add_argument("--num-proc-per-gpu", type=int, default=1)
 parser.add_argument("--buffer-size", type=int, default=2048)
 parser.add_argument("--batch-size", type=int, default=64)
 parser.add_argument("--num-workers", type=int, default=16)
+parser.add_argument("--encoder", type=str, default="vits")
 # constants
 parser.add_argument("--image-height", type=int, default=576)
 parser.add_argument("--image-width", type=int, default=1024)
@@ -46,7 +47,7 @@ class SequentialSampler(Sampler):
         self.data_source = data_source
         self.dataset_len = None
 
-    def __len__(self) -> int:
+    def __len__(self):
         return self.dataset_len
 
     def __iter__(self):
@@ -232,7 +233,9 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
         except Exception as e:
             print(e)
             print(f"Error processing depth for {file_path}. Moving on.")
-            with open(os.path.join(args.log_dir, "failed_depth.txt"), "a") as f:
+            with open(
+                os.path.join(args.log_dir, f"{args.exp_name}_failed_depth.txt"), "a"
+            ) as f:
                 f.write(f"{file_path} REASON: {e}\n")
 
     if (not args.no_profiler) and (rank == 0):
@@ -254,6 +257,7 @@ if __name__ == "__main__":
     print(f"buffer-size: {args.buffer_size}")
     print(f"batch-size: {args.batch_size}")
     print(f"num-workers: {args.num_workers}")
+    print(f"encoder: {args.encoder}")
 
     if args.file_list.endswith(".h5"):
         file_paths = [args.file_list]
@@ -266,7 +270,6 @@ if __name__ == "__main__":
         file_queue.put(file_idx)
 
     # model config
-    encoder = "vits"  # 'vits', 'vitb', or 'vitl'
     dataset = "vkitti"  # 'hypersim' for indoor model, 'vkitti' for outdoor model
     max_depth = 80  # 20 for indoor model, 80 for outdoor model
     model_configs = {
@@ -283,11 +286,12 @@ if __name__ == "__main__":
         },
     }
 
-    model = DepthAnythingV2(**{**model_configs[encoder], "max_depth": max_depth})
+    model = DepthAnythingV2(**{**model_configs[args.encoder], "max_depth": max_depth})
     model.load_state_dict(
         torch.load(
             os.path.join(
-                args.weights_dir, f"depth_anything_v2_metric_{dataset}_{encoder}.pth"
+                args.weights_dir,
+                f"depth_anything_v2_metric_{dataset}_{args.encoder}.pth",
             ),
             map_location="cpu",
         )

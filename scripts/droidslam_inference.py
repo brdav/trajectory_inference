@@ -43,7 +43,7 @@ class SequentialSampler(Sampler):
         self.data_source = data_source
         self.dataset_len = None
 
-    def __len__(self) -> int:
+    def __len__(self):
         return self.dataset_len
 
     def __iter__(self):
@@ -349,7 +349,10 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
         except Exception as e:
             print(e)
             print(f"Error processing trajectory for {file_path}. Moving on.")
-            with open(os.path.join(args.log_dir, "failed_trajectory.txt"), "a") as f:
+            with open(
+                os.path.join(args.log_dir, f"{args.exp_name}_failed_trajectory.txt"),
+                "a",
+            ) as f:
                 f.write(f"{file_path} REASON: {e}\n")
 
     if (not args.no_profiler) and (rank == 0):

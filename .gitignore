@@ -22,3 +22,6 @@ build.ninja
 
 # os
 .DS_Store
+
+# experiment
+logs/
