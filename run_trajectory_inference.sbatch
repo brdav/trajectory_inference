@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=trajectory_inference
 #SBATCH --time=6:00:00
-#SBATCH --environment=dataprep-venv
+#SBATCH --environment=traj_inf_env
 #SBATCH --nodes=1
 #SBATCH --account=a03
 #SBATCH --container-workdir=/capstor/scratch/cscs/pmartell/AutonomousDriving
 #SBATCH --reservation=sai-a03
-#SBATCH --output=prep.out
-#SBATCH --error=prep.err
+#SBATCH --output=traj.out
+#SBATCH --error=traj.err
 
 NUM_GPUS=1
 FILE_PATHS_LIST="list.txt"
