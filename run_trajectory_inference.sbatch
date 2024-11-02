@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=trajectory_inference
 #SBATCH --time=6:00:00
-#SBATCH --environment=traj_inf_env
+#SBATCH --environment=trajectory_env
 #SBATCH --nodes=1
 #SBATCH --account=a03
 #SBATCH --container-workdir=/capstor/scratch/cscs/pmartell/AutonomousDriving
@@ -13,9 +13,9 @@ NUM_GPUS=1
 FILE_PATHS_LIST="list.txt"
 EXP_NAME="exp"
 
-srun python trajectory_inference/scripts/geocalib_inference.py \
+srun python scripts/geocalib_inference.py \
     --file-list $FILE_PATHS_LIST \
-    --log-dir "trajectory_inference/logs" \
+    --log-dir "./logs" \
     --num-gpus $NUM_GPUS \
     --num-proc-per-gpu 3 \
     --batch-size 50 \
@@ -24,10 +24,10 @@ srun python trajectory_inference/scripts/geocalib_inference.py \
     --exp-name $EXP_NAME \
     --no-profiler
 
-srun python trajectory_inference/scripts/depthanything_inference.py \
+srun python scripts/depthanything_inference.py \
     --file-list $FILE_PATHS_LIST \
     --weights-dir "/store/cscs/swissai/a03/weights" \
-    --log-dir "trajectory_inference/logs" \
+    --log-dir "./logs" \
     --num-gpus $NUM_GPUS \
     --num-proc-per-gpu 1 \
     --buffer-size 2048 \
@@ -37,10 +37,10 @@ srun python trajectory_inference/scripts/depthanything_inference.py \
     --exp-name $EXP_NAME \
     --no-profiler
 
-srun python trajectory_inference/scripts/droidslam_inference.py \
+srun python scripts/droidslam_inference.py \
     --file-list $FILE_PATHS_LIST \
     --weights "/store/cscs/swissai/a03/weights/droid.pth" \
-    --log-dir "trajectory_inference/logs" \
+    --log-dir "./logs" \
     --num-gpus $NUM_GPUS \
     --num-proc-per-gpu 3 \
     --trajectory-length 4000 \
