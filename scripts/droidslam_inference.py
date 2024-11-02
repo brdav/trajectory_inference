@@ -135,6 +135,8 @@ def get_pose_matrix(traj):
 
 def process_files(rank, p_rank, args, file_queue, file_paths):
 
+    print(f"Started process {p_rank} on GPU {rank}")
+
     # just in case DroidSLAM internals use default
     torch.cuda.set_device(f"cuda:{rank}")
 
@@ -361,14 +363,14 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
 
 if __name__ == "__main__":
 
-    # mp.set_start_method("spawn", force=True)
+    mp.set_start_method("spawn")
 
     args = parser.parse_args()
 
     assert args.num_workers > 0
     assert args.min_trajectory_length <= args.trajectory_length
 
-    print("Starting job with the following parameters:")
+    print("Starting DroidSLAM with the following parameters:")
     print(f"exp-name: {args.exp_name}")
     print(f"num-gpus: {args.num_gpus}")
     print(f"num-proc-per-gpu: {args.num_proc_per_gpu}")

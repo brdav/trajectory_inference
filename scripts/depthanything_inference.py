@@ -117,7 +117,6 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
 
     # push model to assigned GPU
     model = model.to(f"cuda:{rank}").eval()
-    opt_model = torch.compile(model)
 
     # each process assigns num_workers workers for data loading
     dataset = H5Dataset(file_paths)
@@ -204,7 +203,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                 depth_pred = []
                 with torch.no_grad():
                     for data in data_loader:
-                        predictions = opt_model(data.to(f"cuda:{rank}"))
+                        predictions = model(data.to(f"cuda:{rank}"))
                         predictions = nn.functional.interpolate(
                             predictions[:, None],
                             [args.image_height, args.image_width],
@@ -244,13 +243,13 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
 
 if __name__ == "__main__":
 
-    # mp.set_start_method("spawn", force=True)
+    mp.set_start_method("spawn")
 
     args = parser.parse_args()
 
     assert args.num_workers > 0
 
-    print("Starting job with the following parameters:")
+    print("Starting DepthAnything with the following parameters:")
     print(f"exp-name: {args.exp_name}")
     print(f"num-gpus: {args.num_gpus}")
     print(f"num-proc-per-gpu: {args.num_proc_per_gpu}")

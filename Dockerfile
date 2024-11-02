@@ -3,6 +3,7 @@ FROM nvcr.io/nvidia/pytorch:23.07-py3
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONPATH=/home/workspace/trajectory_inference:$PYTHONPATH
 
 # Create a working directory
 RUN mkdir -p /home/workspace

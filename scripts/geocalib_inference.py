@@ -70,6 +70,8 @@ def init_fn(v_file_idx, worker_id):
 
 def process_files(rank, p_rank, args, file_queue, file_paths, model):
 
+    print(f"Started process {p_rank} on GPU {rank}")
+
     # just in case GeoCalib internals use default
     torch.cuda.set_device(f"cuda:{rank}")
 
@@ -220,13 +222,13 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
 
 if __name__ == "__main__":
 
-    # mp.set_start_method("spawn", force=True)
+    mp.set_start_method("spawn")
 
     args = parser.parse_args()
 
     assert args.num_workers > 0
 
-    print("Starting job with the following parameters:")
+    print("Starting GeoCalib with the following parameters:")
     print(f"exp-name: {args.exp_name}")
     print(f"num-gpus: {args.num_gpus}")
     print(f"num-proc-per-gpu: {args.num_proc_per_gpu}")
