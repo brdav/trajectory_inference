@@ -5,6 +5,10 @@ FROM nvcr.io/nvidia/pytorch:23.07-py3
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONPATH=/home/workspace/trajectory_inference:$PYTHONPATH
 
+# Update essentials
+RUN apt-get update && apt-get install python3-pip python3-venv -y
+RUN pip install --upgrade pip setuptools
+
 # Create a working directory
 RUN mkdir -p /home/workspace
 WORKDIR /home/workspace
@@ -18,8 +22,11 @@ RUN pip3 install opencv-python h5py scipy tensorboard && \
     pip3 install xformers==0.0.22.post4 --index-url https://download.pytorch.org/whl/cu121
 
 # Compile DROID-SLAM CUDA extension
-RUN cd trajectory_inference/droid_trajectory/droid_slam && \
+RUN cd /home/workspace/trajectory_inference/droid_trajectory/droid_slam && \
     python3 setup.py install
+
+RUN cd /home/workspace/trajectory_inference && \
+    pip3 install -e .
 
 # Set up aliases for convenience
 RUN echo 'alias python=python3' >> ~/.bashrc && \

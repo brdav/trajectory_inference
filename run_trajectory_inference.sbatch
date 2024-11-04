@@ -6,11 +6,11 @@
 #SBATCH --account=a03
 #SBATCH --container-workdir=/capstor/scratch/cscs/pmartell/AutonomousDriving
 #SBATCH --reservation=sai-a03
-#SBATCH --output=traj.out
-#SBATCH --error=traj.err
+#SBATCH --output=traj_%j.out
+#SBATCH --error=traj_%j.err
 
 NUM_GPUS=1
-FILE_PATHS_LIST="list.txt"
+FILE_PATHS_LIST="file_list_node_${NODE_IDX}.txt"
 EXP_NAME="exp"
 
 srun python scripts/geocalib_inference.py \
@@ -31,7 +31,7 @@ srun python scripts/depthanything_inference.py \
     --num-gpus $NUM_GPUS \
     --num-proc-per-gpu 1 \
     --buffer-size 2048 \
-    --batch-size 144 \
+    --batch-size 192 \
     --num-workers 12 \
     --encoder "vits" \
     --exp-name $EXP_NAME \

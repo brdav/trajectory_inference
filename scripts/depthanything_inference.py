@@ -203,7 +203,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                 depth_pred = []
                 with torch.no_grad():
                     for data in data_loader:
-                        predictions = model(data.to(f"cuda:{rank}"))
+                        predictions = model.forward(data.to(f"cuda:{rank}"))
                         predictions = nn.functional.interpolate(
                             predictions[:, None],
                             [args.image_height, args.image_width],
