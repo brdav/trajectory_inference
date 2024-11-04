@@ -1,0 +1,14 @@
+image = "/capstor/scratch/cscs/dbrggema/trajectory-inference-image.sqsh"
+
+mounts = ["/capstor", "/users"]
+
+writable = true
+
+workdir = "/capstor/scratch/cscs/dbrggema/trajectory_inference"
+
+[env]
+ENROOT_LIBRARY_PATH="/capstor/scratch/cscs/fmohamed/enrootlibn"
+
+[annotations]
+com.hooks.aws_ofi_nccl.enabled = "true"
+com.hooks.aws_ofi_nccl.variant = "cuda12"

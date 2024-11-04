@@ -1,3 +1,4 @@
+import os
 import h5py
 import json
 from pathlib import Path
@@ -41,10 +42,10 @@ def collect_frames():
             except Exception as e:
                 print(e)
                 print(f"Error opening {path}. Moving on.")
-                with open("not_included_h5.txt", "a") as f:
+                with open("output/not_included_h5.txt", "a") as f:
                     f.write(f"{path} REASON: {e}\n")
 
-    with open("path_to_frames.json", "w", encoding="utf-8") as f:
+    with open("output/path_to_frames.json", "w", encoding="utf-8") as f:
         json.dump(path_to_frames, f, ensure_ascii=False, indent=4)
 
     return path_to_frames
@@ -52,12 +53,13 @@ def collect_frames():
 
 def create_txt(paths_per_node):
     for k, v in paths_per_node.items():
-        with open(f"file_list_node_{k}.txt", "w") as f:
+        with open(f"output/file_list_node_{k}.txt", "w") as f:
             for p in v:
                 f.write(f"{p}\n")
 
 
 def main():
+    os.makedirs("output", exist_ok=True)
     path_to_frames = collect_frames()
     total_frames = sum(list(path_to_frames.values()))
     frames_per_node = total_frames / NODES
@@ -72,7 +74,7 @@ def main():
             node += 1
             curr_frames = 0
 
-    with open("paths_per_node.json", "w", encoding="utf-8") as f:
+    with open("output/paths_per_node.json", "w", encoding="utf-8") as f:
         json.dump(paths_per_node, f, ensure_ascii=False, indent=4)
 
     create_txt(paths_per_node)

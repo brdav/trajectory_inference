@@ -27,53 +27,50 @@ Download the droid.pth checkpoint from [here](https://github.com/princeton-vl/DR
 
 [In progress...]
 
+Make sure to set up credentials to be able to download containers from the Nvidia NGC catalog, see [here](https://confluence.cscs.ch/display/KB/LLM+Inference).
+
+Clone the repository to `$SCRATCH`:
+```bash
+cd $SCRATCH
+git clone --recursive git@github.com:brdav/trajectory_inference.git
+```
+
 Request an interactive job:
 ```
 ENROOT_LIBRARY_PATH=/capstor/scratch/cscs/fmohamed/enrootlibn srun -A a03 --reservation=sai-a03 --time=1:00:00 --pty bash
 ```
 
-Navigate to the project directory and build the container:
+Navigate to the project directory and build the Docker image:
 ```bash
-cd ~/trajectory_inference
-podman build -t trajectory-inference .
-enroot import -x mount -o trajectory-inference.sqsh podman://trajectory-inference
+cd $SCRATCH/trajectory_inference
+podman build -t trajectory-inference-image .
+enroot import -x mount -o $SCRATCH/trajectory-inference-image.sqsh podman://trajectory-inference-image
 ```
 
-Create a `.toml` file with instructions:
+Copy the `.toml` file with instructions and adapt it to your username:
 ```bash
 mkdir -p ~/.edf
-vim ~/.edf/trajectory-inference.toml
-```
-
-Adapt the content:
-```vim
-image = "/your/path/to/trajectory-inference.sqsh"
-
-mounts = ["/capstor", "/users"]
-
-writable = true
-
-workdir = "/iopsstor/scratch/cscs/fozdemir"
-
-[env]
-ENROOT_LIBRARY_PATH="/capstor/scratch/cscs/fmohamed/enrootlibn"
-LD_LIBRARY_PATH="/usr/local/cuda/lib64:/opt/hpcx/ucc/lib/:/opt/hpcx/ucx/lib:/usr/local/cuda/compat/lib.real:/external/lib:/usr/local/lib/python3.10/dist-packages/torch/lib:/usr/local/lib/python3.10/dist-packages/torch_tensorrt/lib:/usr/local/cuda/compat/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
-
-[annotations.hooks.aws_ofi_nccl]
-enabled = "true"
-variant = "cuda12"
-
-[annotations.com.hooks.ssh]
-enabled = "true"
-authorize_ssh_key = "/users/dbrggema/.ssh/cscs-key.pub"
+cp trajectory-inference-env.toml ~/.edf/
+vim ~/.edf/trajectory-inference-env.toml
 ```
 
 
 ## How to Run
 
+Before running inference, collect all h5 file paths (check script parameters):
+```bash
+srun -A a03 --reservation=sai-a03 --environment=trajectory-inference-env --time=1:00:00 --pty bash
+python scripts/collect_h5.py
+exit
+```
+
 Check parameters in the `.sbatch` script, then submit with:
 
-```
-NODE_IDX="0"
-sbatch --export=NODE_IDX=$NODE_IDX run_trajectory_inference.sbatch
+```bash
+for NODE_IDX in {0..63} ; do
+    sbatch -A a03 --export=NODE_IDX=$NODE_IDX run_trajectory_inference.sbatch
+    sleep .5
+done
+sleep 5
+squeue -u $USER
 ```
