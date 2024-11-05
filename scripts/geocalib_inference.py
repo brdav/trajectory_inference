@@ -177,9 +177,9 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                     results = [
                         model.calibrate(d, camera_model=args.camera_model) for d in data
                     ]
-                    K = torch.stack([r["camera"].K for r in results], dim=0)
-                    rp = torch.stack([r["gravity"].rp for r in results], dim=0)
-                    k1 = torch.stack([r["camera"].k1 for r in results], dim=0)
+                    K = torch.concatenate([r["camera"].K for r in results], dim=0)
+                    rp = torch.concatenate([r["gravity"].rp for r in results], dim=0)
+                    k1 = torch.concatenate([r["camera"].k1 for r in results], dim=0)
 
                 # main field
                 calib_file.create_dataset(
