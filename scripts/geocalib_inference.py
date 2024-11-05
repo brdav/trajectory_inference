@@ -190,9 +190,11 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
 
                 # if we don't use pinhole model, save distortion
                 if args.camera_model != "pinhole":
+                    dist = np.zeros(5, dtype=np.float32)
+                    dist[0] = k1.mean(dim=0).item()
                     calib_file.create_dataset(
-                        "distortion_k1",
-                        data=k1.mean(dim=0).cpu().numpy(),
+                        "distortion",
+                        data=dist,
                         dtype="float32",
                     )
 
