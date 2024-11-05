@@ -37,13 +37,13 @@ git clone --recursive git@github.com:brdav/trajectory_inference.git
 
 Request an interactive job:
 ```
-ENROOT_LIBRARY_PATH=/capstor/scratch/cscs/fmohamed/enrootlibn srun -A a03 --reservation=sai-a03 --time=1:00:00 --pty bash
+ENROOT_LIBRARY_PATH=/capstor/scratch/cscs/fmohamed/enrootlibn srun -A a03 --time=1:00:00 --pty bash
 ```
 
 Navigate to the project directory and build the Docker image:
 ```bash
 cd $SCRATCH/trajectory_inference
-podman build -t trajectory-inference-image .
+podman build --ssh github=/users/$USER/.ssh/id_ed25519 -t trajectory-inference-image .
 enroot import -x mount -o $SCRATCH/trajectory-inference-image.sqsh podman://trajectory-inference-image
 ```
 
@@ -59,13 +59,12 @@ vim ~/.edf/trajectory-inference-env.toml
 
 Before running inference, collect all h5 file paths (check script parameters):
 ```bash
-srun -A a03 --reservation=sai-a03 --environment=trajectory-inference-env --time=1:00:00 --pty bash
+srun -A a03 --environment=trajectory-inference-env --time=1:00:00 --pty bash
 python scripts/collect_h5.py
 exit
 ```
 
 Check parameters in the `.sbatch` script, then submit with:
-
 ```bash
 mkdir -p logs_slurm
 for NODE_IDX in {0..63} ; do
@@ -79,12 +78,17 @@ squeue -u $USER
 
 ## How to undistort
 
-It is recommended to work with undistorted images. A prerequisite to this is that the calib h5 file includes `distortion` parameters. If that's the case, we can create an undistorted version of that dataset, and then run the trajectory inference on that undistorted version. For example for ONCE:
+It is recommended to work with undistorted images. A prerequisite to this is that the calib h5 file includes `distortion` parameters. If that's the case, we can create an undistorted version of that dataset, and then run the trajectory inference on that undistorted version. So far we should do it for ONCE and for DrivingDojo:
 ```bash
-srun -A a03 --reservation=sai-a03 --environment=trajectory-inference-env --time=4:00:00 --cpus-per-task=64 --pty bash
+srun -A a03 --environment=trajectory-inference-env --time=12:00:00 --cpus-per-task=64 --pty bash
 python scripts/undistort_h5.py \
     --base-dir /capstor/store/cscs/swissai/a03/datasets/ONCE \
-    --replace_from ONCE \
-    --replace_to ONCE_undistorted \
+    --replace-from ONCE \
+    --replace-to ONCE_undistorted \
+    --processes 64
+python scripts/undistort_h5.py \
+    --base-dir /capstor/store/cscs/swissai/a03/datasets/DrivingDojo_h5 \
+    --replace-from DrivingDojo_h5 \
+    --replace-to DrivingDojo_h5_undistorted \
     --processes 64
 ```

@@ -13,9 +13,9 @@ H5_DIRS = [
     "DAD",
     "DoTA",
     "Drive360",
-    "DrivingDojo_h5",  # has intrinsics
+    # "DrivingDojo_h5",  # undistort first --> README
     "HondaHAD",
-    "ONCE",  # has intrinsics
+    # "ONCE",  # undistort first --> README
     "OpenDV-YouTube",
     "YouTubeCrash",
     "bdd100k",
@@ -24,6 +24,7 @@ H5_DIRS = [
     "kitti_h5",
     "nuplan_h5",
     "nuscenes_h5",
+    # "HONDAHDD",  # not ready yet
 ]
 
 NODES = 64
