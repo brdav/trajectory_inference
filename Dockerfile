@@ -33,7 +33,7 @@ RUN pip3 install torch_scatter -f https://data.pyg.org/whl/torch-2.1.0+cu121.htm
     # && \
     # pip3 install xformers==0.0.22.post4 --index-url https://download.pytorch.org/whl/cu121
 # RUN pip3 install -U xformers --index-url https://download.pytorch.org/whl/cu121
-RUN MAX_JOBS=4 TORCH_CUDA_ARCH_LIST="9.0" pip install -v -U git+https://github.com/facebookresearch/xformers.git@16e4245#egg=xformers
+RUN MAX_JOBS=3 TORCH_CUDA_ARCH_LIST="9.0" pip install -v -U git+https://github.com/facebookresearch/xformers.git@16e4245#egg=xformers
 
 # Compile DROID-SLAM CUDA extension
 RUN cd trajectory_inference/droid_trajectory/droid_slam && \

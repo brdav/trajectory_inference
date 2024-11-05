@@ -43,8 +43,8 @@ ENROOT_LIBRARY_PATH=/capstor/scratch/cscs/fmohamed/enrootlibn srun -A a03 --time
 Navigate to the project directory and build the Docker image:
 ```bash
 cd $SCRATCH/trajectory_inference
-podman build --ssh github=/users/$USER/.ssh/id_ed25519 -t trajectory-inference-image .
-enroot import -x mount -o $SCRATCH/trajectory-inference-image.sqsh podman://trajectory-inference-image
+podman build --ssh github=/users/$USER/.ssh/id_ed25519 -t droid-slam .
+enroot import -x mount -o $SCRATCH/droid-slam.sqsh podman://droid-slam
 ```
 
 Copy the `.toml` file and replace `<user>` with username:

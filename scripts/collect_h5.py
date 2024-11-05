@@ -25,7 +25,7 @@ H5_DIRS = [
     # "dad_streetaccident",
     "kitti_h5",
     "nuplan_h5",
-    "nuscenes_h5",
+    # "nuscenes_h5",
     # "HONDAHDD",  # not ready yet
 ]
 
@@ -47,6 +47,7 @@ def collect_frames():
     # if path_to_frames.json exists, load it
     if os.path.exists("output/path_to_frames.json"):
         with open("output/path_to_frames.json", "r") as f:
+            print("Skipping collection of frames, loading from file.")
             return json.load(f)
 
     path_to_frames = {}
@@ -74,11 +75,10 @@ def main():
     os.makedirs("output", exist_ok=True)
     path_to_frames = collect_frames()
 
-    # Save path_to_frames to file
-
-
     total_frames = sum(list(path_to_frames.values()))
     frames_per_node = total_frames / NODES
+
+    print("Splitting into nodes...", total_frames, frames_per_node)
 
     paths_per_node = defaultdict(list)
     node = 0
