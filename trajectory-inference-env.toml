@@ -1,10 +1,10 @@
-image = "/capstor/scratch/cscs/<user>/trajectory-inference-image.sqsh"
+image = "/capstor/scratch/cscs/pmartell/trajectory-inference-image.sqsh"
 
 mounts = ["/capstor", "/users"]
 
 writable = true
 
-workdir = "/capstor/scratch/cscs/<user>/trajectory_inference"
+workdir = "/capstor/scratch/cscs/pmartell/trajectory_inference"
 
 [env]
 ENROOT_LIBRARY_PATH="/capstor/scratch/cscs/fmohamed/enrootlibn"

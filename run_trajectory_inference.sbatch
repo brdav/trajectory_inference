@@ -1,10 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=trajectory_inference
-#SBATCH --time=24:00:00
+#SBATCH --time=6:00:00
 #SBATCH --environment=trajectory-inference-env
 #SBATCH --nodes=1
 #SBATCH --account=a03
-# #SBATCH --reservation=sai-a03
 #SBATCH --output=./logs_slurm/traj_%j.log
 #SBATCH --open-mode=append
 
