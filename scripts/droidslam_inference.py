@@ -85,6 +85,27 @@ class H5Dataset(Dataset):
                 "r",
             ) as calib_file:
                 K = calib_file["camera"]
+                if "distortion" in calib_file:
+                    self.undistort = True
+                    dist = calib_file["distortion"][:]
+                    new_K, self.roi = cv2.getOptimalNewCameraMatrix(
+                        K,
+                        dist,
+                        (self.image_size[1], self.image_size[0]),
+                        1,
+                        (self.image_size[1], self.image_size[0]),
+                    )
+                    self.mapx, self.mapy = cv2.initUndistortRectifyMap(
+                        K,
+                        dist,
+                        None,
+                        new_K,
+                        (self.image_size[1], self.image_size[0]),
+                        5,
+                    )
+                    K = new_K
+                else:
+                    self.undistort = False
                 # rescale intrinsics
                 fx = K[0, 0] * self.resize_size[1] / self.image_size[1]
                 fy = K[1, 1] * self.resize_size[0] / self.image_size[0]
@@ -94,6 +115,13 @@ class H5Dataset(Dataset):
 
         image = self.dataset[idx + self.index_offset.value]
         depth = self.depth_dataset[idx + self.index_offset.value]
+
+        if self.undistort:
+            undist_image = cv2.remap(image, self.mapx, self.mapy, cv2.INTER_LINEAR)
+            undist_depth = cv2.remap(depth, self.mapx, self.mapy, cv2.INTER_NEAREST)
+            x, y, w, h = self.roi
+            image = undist_image[y : y + h, x : x + w]
+            depth = undist_depth[y : y + h, x : x + w]
 
         # resize and crop
         image = cv2.resize(image, (self.resize_size[1], self.resize_size[0]))

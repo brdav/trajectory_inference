@@ -13,9 +13,9 @@ H5_DIRS = [
     "DAD",
     "DoTA",
     "Drive360",
-    "DrivingDojo_h5",
+    "DrivingDojo_h5",  # has intrinsics
     "HondaHAD",
-    "ONCE",
+    "ONCE",  # has intrinsics
     "OpenDV-YouTube",
     "YouTubeCrash",
     "bdd100k",

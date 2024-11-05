@@ -1,6 +1,6 @@
 # Trajectory Inference
 
-## Setup
+## Setup locally
 
 Clone the repository:
 ```bash
@@ -47,7 +47,7 @@ podman build -t trajectory-inference-image .
 enroot import -x mount -o $SCRATCH/trajectory-inference-image.sqsh podman://trajectory-inference-image
 ```
 
-Copy the `.toml` file with instructions and adapt it to your username:
+Copy the `.toml` file and replace `<user>` with username:
 ```bash
 mkdir -p ~/.edf
 cp trajectory-inference-env.toml ~/.edf/
@@ -67,6 +67,7 @@ exit
 Check parameters in the `.sbatch` script, then submit with:
 
 ```bash
+mkdir -p logs_slurm
 for NODE_IDX in {0..63} ; do
     sbatch -A a03 --export=NODE_IDX=$NODE_IDX run_trajectory_inference.sbatch
     sleep .5

@@ -9,6 +9,12 @@ ENV PYTHONPATH=/home/workspace/trajectory_inference:$PYTHONPATH
 RUN apt-get update && apt-get install python3-pip python3-venv -y
 RUN pip install --upgrade pip setuptools
 
+RUN apt-get install -y git && \
+    apt-get install -y software-properties-common && \
+    apt-get install -y ninja-build && \
+    apt-get install -y build-essential && \
+    apt-get install -y cmake
+
 # Create a working directory
 RUN mkdir -p /home/workspace
 WORKDIR /home/workspace
@@ -17,7 +23,7 @@ WORKDIR /home/workspace
 RUN git clone --recursive git@github.com:brdav/trajectory_inference.git
 
 # Install Python dependencies
-RUN pip3 install opencv-python h5py scipy tensorboard && \
+RUN pip3 install numpy opencv-python h5py scipy tensorboard && \
     pip3 install torch_scatter -f https://data.pyg.org/whl/torch-2.1.0+cu121.html && \
     pip3 install xformers==0.0.22.post4 --index-url https://download.pytorch.org/whl/cu121
 
