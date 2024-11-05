@@ -21,8 +21,6 @@ H5_DIRS = [
     "bdd100k",
     "cityscapes_h5",
     "dad_streetaccident",
-    "honda_had",
-    "honda_hdd",
     "kitti_h5",
     "nuplan_h5",
     "nuscenes_h5",

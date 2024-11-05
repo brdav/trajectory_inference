@@ -55,7 +55,7 @@ vim ~/.edf/trajectory-inference-env.toml
 ```
 
 
-## How to Run
+## How to run
 
 Before running inference, collect all h5 file paths (check script parameters):
 ```bash
@@ -74,4 +74,17 @@ for NODE_IDX in {0..63} ; do
 done
 sleep 5
 squeue -u $USER
+```
+
+
+## How to undistort
+
+It is recommended to work with undistorted images. A prerequisite to this is that the calib h5 file includes `distortion` parameters. If that's the case, we can create an undistorted version of that dataset, and then run the trajectory inference on that undistorted version. For example for ONCE:
+```bash
+srun -A a03 --reservation=sai-a03 --environment=trajectory-inference-env --time=4:00:00 --cpus-per-task=64 --pty bash
+python scripts/undistort_h5.py \
+    --base-dir /capstor/store/cscs/swissai/a03/datasets/ONCE \
+    --replace_from ONCE \
+    --replace_to ONCE_undistorted \
+    --processes 64
 ```
