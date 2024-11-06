@@ -1,6 +1,5 @@
 # ignore IDE files
 weights/
-*.sh
 *.pth
 *.pyc
 *.swp
