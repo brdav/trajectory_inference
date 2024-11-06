@@ -1,15 +1,12 @@
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from collections import OrderedDict
 
 from .modules.extractor import BasicEncoder
 from .modules.corr import CorrBlock
 from .modules.gru import ConvGRU
 from .modules.clipping import GradientClip
 
-from lietorch import SE3
 from .geom.ba import BA
 
 from .geom import projective_ops as pops

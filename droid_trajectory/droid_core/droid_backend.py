@@ -1,8 +1,5 @@
 import torch
-import lietorch
-import numpy as np
 
-from lietorch import SE3
 from .factor_graph import FactorGraph
 
 
@@ -36,7 +33,7 @@ class DroidBackend:
     def __call__(self, steps=12):
         """main update"""
 
-        t = self.video.counter.value
+        t = self.video.counter
         if not self.video.stereo and not torch.any(self.video.disps_sens):
             self.video.normalize()
 

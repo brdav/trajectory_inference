@@ -84,7 +84,7 @@ class H5Dataset(Dataset):
                 ),
                 "r",
             ) as calib_file:
-                K = calib_file["camera"]
+                K = calib_file["camera"][:]
                 if "distortion" in calib_file:
                     self.undistort = True
                     dist = calib_file["distortion"][:]

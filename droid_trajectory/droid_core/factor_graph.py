@@ -1,9 +1,6 @@
 import torch
-import lietorch
 import numpy as np
 
-import matplotlib.pyplot as plt
-from lietorch import SE3
 from .modules.corr import CorrBlock, AltCorrBlock
 from .geom import projective_ops as pops
 
@@ -180,16 +177,16 @@ class FactorGraph:
     def rm_keyframe(self, ix):
         """drop edges from factor graph"""
 
-        with self.video.get_lock():
-            self.video.images[ix] = self.video.images[ix + 1]
-            self.video.poses[ix] = self.video.poses[ix + 1]
-            self.video.disps[ix] = self.video.disps[ix + 1]
-            self.video.disps_sens[ix] = self.video.disps_sens[ix + 1]
-            self.video.intrinsics[ix] = self.video.intrinsics[ix + 1]
+        # with self.video.get_lock():
+        self.video.images[ix] = self.video.images[ix + 1]
+        self.video.poses[ix] = self.video.poses[ix + 1]
+        self.video.disps[ix] = self.video.disps[ix + 1]
+        self.video.disps_sens[ix] = self.video.disps_sens[ix + 1]
+        self.video.intrinsics[ix] = self.video.intrinsics[ix + 1]
 
-            self.video.nets[ix] = self.video.nets[ix + 1]
-            self.video.inps[ix] = self.video.inps[ix + 1]
-            self.video.fmaps[ix] = self.video.fmaps[ix + 1]
+        self.video.nets[ix] = self.video.nets[ix + 1]
+        self.video.inps[ix] = self.video.inps[ix + 1]
+        self.video.fmaps[ix] = self.video.fmaps[ix + 1]
 
         m = (self.ii_inac == ix) | (self.jj_inac == ix)
         self.ii_inac[self.ii_inac >= ix] -= 1
@@ -278,7 +275,7 @@ class FactorGraph:
         """run update operator on factor graph - reduced memory implementation"""
 
         # alternate corr implementation
-        t = self.video.counter.value
+        t = self.video.counter
 
         num, rig, ch, ht, wd = self.video.fmaps.shape
         corr_op = AltCorrBlock(self.video.fmaps.view(1, num * rig, ch, ht, wd))
@@ -346,7 +343,9 @@ class FactorGraph:
     def add_neighborhood_factors(self, t0, t1, r=3):
         """add edges between neighboring frames within radius r"""
 
-        ii, jj = torch.meshgrid(torch.arange(t0, t1), torch.arange(t0, t1), indexing="ij")
+        ii, jj = torch.meshgrid(
+            torch.arange(t0, t1), torch.arange(t0, t1), indexing="ij"
+        )
         ii = ii.reshape(-1).to(dtype=torch.long, device=self.device)
         jj = jj.reshape(-1).to(dtype=torch.long, device=self.device)
 
@@ -360,7 +359,7 @@ class FactorGraph:
     ):
         """add edges to the factor graph based on distance"""
 
-        t = self.video.counter.value
+        t = self.video.counter
         ix = torch.arange(t0, t)
         jx = torch.arange(t1, t)
 

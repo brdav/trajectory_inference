@@ -1,6 +1,4 @@
 import torch
-import lietorch
-import numpy as np
 
 from lietorch import SE3
 from .factor_graph import FactorGraph
@@ -84,9 +82,9 @@ class DroidFrontend:
         if d.item() < self.keyframe_thresh:
             self.graph.rm_keyframe(self.t1 - 2)
 
-            with self.video.get_lock():
-                self.video.counter.value -= 1
-                self.t1 -= 1
+            # with self.video.get_lock():
+            self.video.counter -= 1
+            self.t1 -= 1
 
         else:
             for itr in range(self.iters2):
@@ -103,7 +101,7 @@ class DroidFrontend:
         """initialize the SLAM system"""
 
         self.t0 = 0
-        self.t1 = self.video.counter.value
+        self.t1 = self.video.counter
 
         self.graph.add_neighborhood_factors(self.t0, self.t1, r=3)
 
@@ -127,9 +125,9 @@ class DroidFrontend:
         self.last_disp = self.video.disps[self.t1 - 1].clone()
         self.last_time = self.video.tstamp[self.t1 - 1].clone()
 
-        with self.video.get_lock():
-            self.video.ready.value = 1
-            self.video.dirty[: self.t1] = True
+        # with self.video.get_lock():
+        self.video.ready = 1
+        self.video.dirty[: self.t1] = True
 
         self.graph.rm_factors(self.graph.ii < self.warmup - 4, store=True)
 
@@ -137,9 +135,9 @@ class DroidFrontend:
         """main update"""
 
         # do initialization
-        if not self.is_initialized and self.video.counter.value == self.warmup:
+        if not self.is_initialized and self.video.counter == self.warmup:
             self.__initialize()
 
         # do update
-        elif self.is_initialized and self.t1 < self.video.counter.value:
+        elif self.is_initialized and self.t1 < self.video.counter:
             self.__update()

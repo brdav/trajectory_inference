@@ -1,12 +1,8 @@
-import cv2
 import torch
 import lietorch
 
 from lietorch import SE3
-from collections import OrderedDict
 from .factor_graph import FactorGraph
-from .droid_net import DroidNet
-from .geom import projective_ops as pops
 
 
 class PoseTrajectoryFiller:
@@ -45,7 +41,7 @@ class PoseTrajectoryFiller:
         inputs = images[:, :, [2, 1, 0]].to(self.device) / 255.0
 
         ### linear pose interpolation ###
-        N = self.video.counter.value
+        N = self.video.counter
         M = len(tstamps)
 
         ts = self.video.tstamp[:N]
@@ -65,7 +61,7 @@ class PoseTrajectoryFiller:
         inputs = inputs.sub_(self.MEAN).div_(self.STDV)
         fmap = self.__feature_encoder(inputs)
 
-        self.video.counter.value += M
+        self.video.counter += M
         self.video[N : N + M] = (
             tt,
             images[:, 0],
@@ -84,7 +80,7 @@ class PoseTrajectoryFiller:
             graph.update(N, N + M, motion_only=True)
 
         Gs = SE3(self.video.poses[N : N + M].clone())
-        self.video.counter.value -= M
+        self.video.counter -= M
 
         return [Gs]
 

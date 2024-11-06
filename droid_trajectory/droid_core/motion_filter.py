@@ -1,9 +1,5 @@
-import cv2
 import torch
 import lietorch
-
-from collections import OrderedDict
-from .droid_net import DroidNet
 
 from .geom import projective_ops as pops
 from .modules.corr import CorrBlock
@@ -63,7 +59,7 @@ class MotionFilter:
         gmap = self.__feature_encoder(inputs)
 
         ### always add first frame to the depth video ###
-        if self.video.counter.value == 0:
+        if self.video.counter == 0:
             net, inp = self.__context_encoder(inputs[:, [0]])
             self.net, self.inp, self.fmap = net, inp, gmap
             self.video.append(

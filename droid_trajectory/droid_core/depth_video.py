@@ -1,10 +1,6 @@
-import numpy as np
 import torch
 import lietorch
 import droid_backends
-
-from torch.multiprocessing import Process, Queue, Lock, Value
-from collections import OrderedDict
 
 from .droid_net import cvx_upsample
 from .geom import projective_ops as pops
@@ -16,35 +12,37 @@ class DepthVideo:
         self.device = device
 
         # current keyframe count
-        self.counter = Value("i", 0)
-        self.ready = Value("i", 0)
+        self.counter = 0  # Value("i", 0)
+        self.ready = 0  # Value("i", 0)
         self.ht = ht = image_size[0]
         self.wd = wd = image_size[1]
 
         ### state attributes ###
         self.tstamp = torch.zeros(
             buffer, device=device, dtype=torch.float
-        ).share_memory_()
+        )  # .share_memory_()
         self.images = torch.zeros(buffer, 3, ht, wd, device=device, dtype=torch.uint8)
         self.dirty = torch.zeros(
             buffer, device=device, dtype=torch.bool
-        ).share_memory_()
-        self.red = torch.zeros(buffer, device=device, dtype=torch.bool).share_memory_()
+        )  # .share_memory_()
+        self.red = torch.zeros(
+            buffer, device=device, dtype=torch.bool
+        )  # .share_memory_()
         self.poses = torch.zeros(
             buffer, 7, device=device, dtype=torch.float
-        ).share_memory_()
+        )  # .share_memory_()
         self.disps = torch.ones(
             buffer, ht // 8, wd // 8, device=device, dtype=torch.float
-        ).share_memory_()
+        )  # .share_memory_()
         self.disps_sens = torch.zeros(
             buffer, ht // 8, wd // 8, device=device, dtype=torch.float
-        ).share_memory_()
+        )  # .share_memory_()
         self.disps_up = torch.zeros(
             buffer, ht, wd, device=device, dtype=torch.float
-        ).share_memory_()
+        )  # .share_memory_()
         self.intrinsics = torch.zeros(
             buffer, 4, device=device, dtype=torch.float
-        ).share_memory_()
+        )  # .share_memory_()
 
         self.stereo = stereo
         c = 1 if not self.stereo else 2
@@ -52,30 +50,25 @@ class DepthVideo:
         ### feature attributes ###
         self.fmaps = torch.zeros(
             buffer, c, 128, ht // 8, wd // 8, dtype=torch.half, device=device
-        ).share_memory_()
+        )  # .share_memory_()
         self.nets = torch.zeros(
             buffer, 128, ht // 8, wd // 8, dtype=torch.half, device=device
-        ).share_memory_()
+        )  # .share_memory_()
         self.inps = torch.zeros(
             buffer, 128, ht // 8, wd // 8, dtype=torch.half, device=device
-        ).share_memory_()
+        )  # .share_memory_()
 
         # initialize poses to identity transformation
         self.poses[:] = torch.as_tensor(
             [0, 0, 0, 0, 0, 0, 1], dtype=torch.float, device=device
         )
 
-    def get_lock(self):
-        return self.counter.get_lock()
-
     def __item_setter(self, index, item):
-        if isinstance(index, int) and index >= self.counter.value:
-            self.counter.value = index + 1
+        if isinstance(index, int) and index >= self.counter:
+            self.counter = index + 1
 
-        elif (
-            isinstance(index, torch.Tensor) and index.max().item() > self.counter.value
-        ):
-            self.counter.value = index.max().item() + 1
+        elif isinstance(index, torch.Tensor) and index.max().item() > self.counter:
+            self.counter = index.max().item() + 1
 
         # self.dirty[index] = True
         self.tstamp[index] = item[0]
@@ -104,31 +97,28 @@ class DepthVideo:
             self.inps[index] = item[8]
 
     def __setitem__(self, index, item):
-        with self.get_lock():
-            self.__item_setter(index, item)
+        self.__item_setter(index, item)
 
     def __getitem__(self, index):
         """index the depth video"""
 
-        with self.get_lock():
-            # support negative indexing
-            if isinstance(index, int) and index < 0:
-                index = self.counter.value + index
+        # support negative indexing
+        if isinstance(index, int) and index < 0:
+            index = self.counter + index
 
-            item = (
-                self.poses[index],
-                self.disps[index],
-                self.intrinsics[index],
-                self.fmaps[index],
-                self.nets[index],
-                self.inps[index],
-            )
+        item = (
+            self.poses[index],
+            self.disps[index],
+            self.intrinsics[index],
+            self.fmaps[index],
+            self.nets[index],
+            self.inps[index],
+        )
 
         return item
 
     def append(self, *item):
-        with self.get_lock():
-            self.__item_setter(self.counter.value, item)
+        self.__item_setter(self.counter, item)
 
     ### geometric operations ###
 
@@ -155,11 +145,10 @@ class DepthVideo:
     def normalize(self):
         """normalize depth and poses"""
 
-        with self.get_lock():
-            s = self.disps[: self.counter.value].mean()
-            self.disps[: self.counter.value] /= s
-            self.poses[: self.counter.value, :3] *= s
-            self.dirty[: self.counter.value] = True
+        s = self.disps[: self.counter].mean()
+        self.disps[: self.counter] /= s
+        self.poses[: self.counter, :3] *= s
+        self.dirty[: self.counter] = True
 
     def reproject(self, ii, jj):
         """project points from ii -> jj"""
@@ -178,14 +167,14 @@ class DepthVideo:
         return_matrix = False
         if ii is None:
             return_matrix = True
-            N = self.counter.value
+            N = self.counter
             ii, jj = torch.meshgrid(torch.arange(N), torch.arange(N), indexing="ij")
 
         ii, jj = self.format_indicies(ii, jj)
 
         if bidirectional:
 
-            poses = self.poses[: self.counter.value].clone()
+            poses = self.poses[: self.counter].clone()
 
             d1 = droid_backends.frame_distance(
                 poses, self.disps, self.intrinsics[0], ii, jj, beta
@@ -223,28 +212,28 @@ class DepthVideo:
     ):
         """dense bundle adjustment (DBA)"""
 
-        with self.get_lock():
+        # with self.get_lock():
 
-            # [t0, t1] window of bundle adjustment optimization
-            if t1 is None:
-                t1 = max(ii.max().item(), jj.max().item()) + 1
+        # [t0, t1] window of bundle adjustment optimization
+        if t1 is None:
+            t1 = max(ii.max().item(), jj.max().item()) + 1
 
-            droid_backends.ba(
-                self.poses,
-                self.disps,
-                self.intrinsics[0],
-                self.disps_sens,
-                target,
-                weight,
-                eta,
-                ii,
-                jj,
-                t0,
-                t1,
-                itrs,
-                lm,
-                ep,
-                motion_only,
-            )
+        droid_backends.ba(
+            self.poses,
+            self.disps,
+            self.intrinsics[0],
+            self.disps_sens,
+            target,
+            weight,
+            eta,
+            ii,
+            jj,
+            t0,
+            t1,
+            itrs,
+            lm,
+            ep,
+            motion_only,
+        )
 
-            self.disps.clamp_(min=0.001)
+        self.disps.clamp_(min=0.001)

@@ -1,5 +1,4 @@
 import torch
-import lietorch
 import numpy as np
 
 from .droid_net import DroidNet
@@ -10,7 +9,6 @@ from .droid_backend import DroidBackend
 from .trajectory_filler import PoseTrajectoryFiller
 
 from collections import OrderedDict
-from torch.multiprocessing import Process
 
 
 class Droid:
@@ -20,7 +18,6 @@ class Droid:
         image_size,
         device,
         upsample=False,
-        disable_vis=True,
         buffer=512,
         stereo=False,
         filter_thresh=2.4,
@@ -29,29 +26,26 @@ class Droid:
         super(Droid, self).__init__()
         self.device = device
         self.load_weights(weights)
-        self.disable_vis = disable_vis
 
         # store images, depth, poses, intrinsics (shared between processes)
-        self.video = DepthVideo(image_size=image_size, buffer=buffer, stereo=stereo, device=device)
+        self.video = DepthVideo(
+            image_size=image_size, buffer=buffer, stereo=stereo, device=device
+        )
 
         # filter incoming frames so that there is enough motion
-        self.filterx = MotionFilter(self.net, self.video, device=device, thresh=filter_thresh)
+        self.filterx = MotionFilter(
+            self.net, self.video, device=device, thresh=filter_thresh
+        )
 
         # frontend process
-        self.frontend = DroidFrontend(self.net, self.video, device=device, upsample=upsample)
+        self.frontend = DroidFrontend(
+            self.net, self.video, device=device, upsample=upsample
+        )
 
         # backend process
-        self.backend = DroidBackend(self.net, self.video, device=device, upsample=upsample)
-
-        # visualizer
-        if not self.disable_vis:
-            from .visualization import droid_visualization
-
-            self.visualizer = Process(
-                target=droid_visualization,
-                args=(self.video, device, vis_save),
-            )
-            self.visualizer.start()
+        self.backend = DroidBackend(
+            self.net, self.video, device=device, upsample=upsample
+        )
 
         # post processor - fill in poses for non-keyframes
         self.traj_filler = PoseTrajectoryFiller(self.net, self.video, device=device)
@@ -91,11 +85,11 @@ class Droid:
 
         del self.frontend
 
-        torch.cuda.empty_cache()
+        # torch.cuda.empty_cache()
         # print("#" * 32)
         self.backend(7)
 
-        torch.cuda.empty_cache()
+        # torch.cuda.empty_cache()
         # print("#" * 32)
         self.backend(20)
 

@@ -3,7 +3,6 @@ import torch
 import numpy as np
 from collections import OrderedDict
 
-import lietorch
 from ..data_readers.rgbd_utils import compute_distance_matrix_flow, compute_distance_matrix_flow2
 
 
@@ -23,12 +22,12 @@ def graph_to_edge_list(graph):
 def keyframe_indicies(graph):
     return torch.as_tensor([u for u in graph])
 
-def meshgrid(m, n, device='cuda'):
+def meshgrid(m, n, device):
     ii, jj = torch.meshgrid(torch.arange(m), torch.arange(n), indexing="ij")
     return ii.reshape(-1).to(device), jj.reshape(-1).to(device)
 
-def neighbourhood_graph(n, r):
-    ii, jj = meshgrid(n, n)
+def neighbourhood_graph(n, r, device):
+    ii, jj = meshgrid(n, n, device)
     d = (ii - jj).abs()
     keep = (d >= 1) & (d <= r)
     return ii[keep], jj[keep]
