@@ -29,7 +29,7 @@ H5_DIRS = [
     # "HONDAHDD",  # not ready yet
 ]
 
-NODES = 1024
+NODES = 100
 
 def collect_path(path):
     try:
@@ -53,7 +53,10 @@ def collect_frames():
     path_to_frames = {}
     for dataset in tqdm(H5_DIRS):
         print(BASE_DIR / dataset)
-        tuples = p_map(collect_path, list((BASE_DIR / dataset).rglob("*.h5")))
+        paths = list((BASE_DIR / dataset).rglob("*.h5"))
+        # Filter out all paths whose filenames start with camera_, depth_ or trajectory_
+        paths = [p for p in paths if not any([p.name.startswith(x) for x in ["camera_", "depth_", "trajectory_"]])]
+        tuples = p_map(collect_path, paths)
         for p, n in tuples:
             if n is not None:
                 path_to_frames[str(p)] = n

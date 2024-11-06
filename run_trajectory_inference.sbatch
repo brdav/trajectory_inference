@@ -1,29 +1,21 @@
 #!/bin/bash
 #SBATCH --job-name=trajectory_inference
 #SBATCH --time=05:55:00
-#SBATCH --environment=trajectory-inference-env
 #SBATCH --nodes=1
 #SBATCH --account=a03
 #SBATCH --output=./logs_slurm/traj_%j.log
-#SBATCH --container-workdir=/capstor/scratch/cscs/pmartell/trajectory_inference
+#SBATCH --error=./logs_slurm/error_traj_%j.log
 #SBATCH --mem=460000
+#SBATCH --environment=trajectory-inference-env \
+#SBATCH --container-workdir=/capstor/scratch/cscs/pmartell/trajectory_inference
+
+export ENROOT_LIBRARY_PATH=/capstor/scratch/cscs/fmohamed/enrootlibn
 
 NUM_GPUS=4
 FILE_PATHS_LIST="./output/file_list_node_${NODE_IDX}.txt"
 EXP_NAME="traj_node_${NODE_IDX}"
 
-# python scripts/geocalib_inference.py \
-#     --file-list output/file_list_node_0.txt \
-#     --log-dir "./logs" \
-#     --num-gpus 4 \
-#     --num-proc-per-gpu 4 \
-#     --batch-size 50 \
-#     --num-workers 24 \
-#     --camera-model "pinhole" \
-#     --exp-name test \
-#     --no-profiler
-
-srun numactl --membind=0-3 python scripts/geocalib_inference.py \
+srun python3 scripts/geocalib_inference.py \
     --file-list $FILE_PATHS_LIST \
     --log-dir "./logs" \
     --num-gpus $NUM_GPUS \
@@ -34,7 +26,7 @@ srun numactl --membind=0-3 python scripts/geocalib_inference.py \
     --exp-name $EXP_NAME \
     --no-profiler
 
-srun numactl --membind=0-3 python scripts/depthanything_inference.py \
+srun python3 scripts/depthanything_inference.py \
     --file-list $FILE_PATHS_LIST \
     --weights-dir "/capstor/scratch/cscs/pmartell/trajectory_inference/weights" \
     --log-dir "./logs" \
@@ -47,12 +39,12 @@ srun numactl --membind=0-3 python scripts/depthanything_inference.py \
     --exp-name $EXP_NAME \
     --no-profiler
 
-srun numactl --membind=0-3 python scripts/droidslam_inference.py \
+srun python3 scripts/droidslam_inference.py \
     --file-list $FILE_PATHS_LIST \
     --weights "/capstor/scratch/cscs/pmartell/trajectory_inference/weights/droid.pth" \
     --log-dir "./logs" \
     --num-gpus $NUM_GPUS \
-    --num-proc-per-gpu 4 \
+    --num-proc-per-gpu 1 \
     --trajectory-length 4000 \
     --trajectory-overlap 100 \
     --min-trajectory-length 100 \
