@@ -116,17 +116,19 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
 
         try:  # catch all errors
             file_path = file_paths[file_idx]
+            proc_dirpath = os.path.dirname(file_path) + "_proc"
+            os.makedirs(os.path.join(proc_dirpath), exist_ok=True)
 
             # check if file is already processed
             if os.path.exists(
                 os.path.join(
-                    os.path.dirname(file_path), f"camera_{os.path.basename(file_path)}"
+                    proc_dirpath, f"camera_{os.path.basename(file_path)}"
                 )
             ):
                 try:
                     with h5py.File(
                         os.path.join(
-                            os.path.dirname(file_path),
+                            proc_dirpath,
                             f"camera_{os.path.basename(file_path)}",
                         ),
                         "r",
@@ -141,7 +143,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                     )
                     os.remove(
                         os.path.join(
-                            os.path.dirname(file_path),
+                            proc_dirpath,
                             f"camera_{os.path.basename(file_path)}",
                         )
                     )
@@ -156,7 +158,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
             # open target h5
             with h5py.File(
                 os.path.join(
-                    os.path.dirname(file_path), f"camera_{os.path.basename(file_path)}"
+                    proc_dirpath, f"camera_{os.path.basename(file_path)}"
                 ),
                 "w",
             ) as calib_file:

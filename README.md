@@ -43,7 +43,7 @@ ENROOT_LIBRARY_PATH=/capstor/scratch/cscs/fmohamed/enrootlibn srun -A a03 --time
 Navigate to the project directory and build the Docker image:
 ```bash
 cd $SCRATCH/trajectory_inference
-podman build -t droid-slam .
+podman build -v /capstor/scratch/cscs/pmartell/trajectory_inference:/app/trajectory_inference -t droid-slam .
 enroot import -x mount -o $SCRATCH/droid-slam.sqsh podman://droid-slam
 ```
 
@@ -66,11 +66,12 @@ exit
 
 Check parameters in the `.sbatch` script, then submit with:
 ```bash
-mkdir -p logs_slurm
-for NODE_IDX in {0..63} ; do
-    sbatch -A a03 --export=NODE_IDX=$NODE_IDX run_trajectory_inference.sbatch
-    sleep .5
-done
+mkdir -p logs_slurm && for NODE_IDX in {0..0}; do ENROOT_LIBRARY_PATH="/capstor/scratch/cscs/fmohamed/enrootlibn" sbatch -A a03 --export=NODE_IDX=$NODE_IDX run_trajectory_inference.sbatch && sleep .5; done && sleep 5s && squeue -u pmartell
+# mkdir -p logs_slurm
+# for NODE_IDX in {0..63} ; do
+#     nohup ./run_traj.sh > logs_slurm/out_${NODE_IDX}.log 2>&1 &
+#     sleep .5
+# done
 sleep 5
 squeue -u $USER
 ```

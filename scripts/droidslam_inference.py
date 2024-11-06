@@ -70,7 +70,7 @@ class H5Dataset(Dataset):
             # depth
             self.depth_file = h5py.File(
                 os.path.join(
-                    os.path.dirname(self.current_path),
+                    os.path.dirname(self.current_path) + "_proc",
                     f"depth_{os.path.basename(self.current_path)}",
                 ),
                 "r",
@@ -79,7 +79,7 @@ class H5Dataset(Dataset):
             # intrinsics
             with h5py.File(
                 os.path.join(
-                    os.path.dirname(self.current_path),
+                    os.path.dirname(self.current_path) + "_proc",
                     f"camera_{os.path.basename(self.current_path)}",
                 ),
                 "r",
@@ -159,11 +159,23 @@ def get_pose_matrix(traj):
 
 
 def process_files(rank, p_rank, args, file_queue, file_paths):
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(rank)
+    import queue
+    from functools import partial
+    import h5py
+    import numpy as np
+    import torch
+    import torch.nn as nn
+    import torch.multiprocessing as mp
+    from torch.utils.data import Dataset, DataLoader, Sampler, get_worker_info
+    from torch.profiler import profile, ProfilerActivity
+    from lietorch import SO3
 
-    print(f"Started process {p_rank} on GPU {rank}")
+    print(f">>>>>>>>>>>>>>>>>>> Started process {p_rank} on GPU {rank}")
+    print(">>>>>>>>>>> NUMBER OF GPUs: ", torch.cuda.device_count())
 
     # just in case DroidSLAM internals use default
-    torch.cuda.set_device(f"cuda:{rank}")
+    # torch.cuda.set_device(f"cuda")
 
     # define global
     v_file_idx = mp.Value("i", 0)
@@ -220,18 +232,20 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
 
         try:  # catch all errors
             file_path = file_paths[file_idx]
+            proc_dirpath = os.path.dirname(file_path) + "_proc"
+            os.makedirs(os.path.join(proc_dirpath), exist_ok=True)
 
             # check if file is already processed
             if os.path.exists(
                 os.path.join(
-                    os.path.dirname(file_path),
+                    proc_dirpath,
                     f"trajectory_{os.path.basename(file_path)}",
                 )
             ):
                 try:
                     with h5py.File(
                         os.path.join(
-                            os.path.dirname(file_path),
+                            proc_dirpath,
                             f"trajectory_{os.path.basename(file_path)}",
                         ),
                         "r",
@@ -249,7 +263,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
                     )
                     os.remove(
                         os.path.join(
-                            os.path.dirname(file_path),
+                            proc_dirpath,
                             f"trajectory_{os.path.basename(file_path)}",
                         )
                     )
@@ -263,7 +277,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
             # open target h5
             with h5py.File(
                 os.path.join(
-                    os.path.dirname(file_path),
+                    proc_dirpath,
                     f"trajectory_{os.path.basename(file_path)}",
                 ),
                 "w",
@@ -294,7 +308,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
                         image_size=[crop_height, crop_width],
                         upsample=True,
                         buffer=args.trajectory_length,
-                        device=f"cuda:{rank}",
+                        device=f"cuda",
                     )
 
                     # assign new trajectory
@@ -395,7 +409,7 @@ if __name__ == "__main__":
     assert args.num_workers > 0
     assert args.min_trajectory_length <= args.trajectory_length
 
-    print("Starting DroidSLAM with the following parameters:")
+    print(">>>>>>>>>>>>> Starting DroidSLAM with the following parameters:")
     print(f"exp-name: {args.exp_name}")
     print(f"num-gpus: {args.num_gpus}")
     print(f"num-proc-per-gpu: {args.num_proc_per_gpu}")
@@ -418,19 +432,19 @@ if __name__ == "__main__":
 
     processes = []
     for rank in range(args.num_gpus):
-        for p_rank in range(args.num_proc_per_gpu):
-            p = mp.Process(
-                target=process_files,
-                args=(
-                    rank,
-                    p_rank,
-                    args,
-                    file_queue,
-                    file_paths,
-                ),
-            )
-            p.start()
-            processes.append(p)
+
+        p = mp.Process(
+            target=process_files,
+            args=(
+                rank,
+                0,
+                args,
+                file_queue,
+                file_paths,
+            ),
+        )
+        p.start()
+        processes.append(p)
 
     for p in processes:
         p.join()

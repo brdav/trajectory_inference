@@ -1,0 +1,16 @@
+/store/swissai/a03/datasets/CCD/h5_files/Crash-1500_000488.h5
+/store/swissai/a03/datasets/CCD/h5_files/Crash-1500_000713.h5
+/store/swissai/a03/datasets/CCD/h5_files/Crash-1500_000420.h5
+/store/swissai/a03/datasets/CCD/h5_files/Crash-1500_000418.h5
+/store/swissai/a03/datasets/CCD/h5_files/Crash-1500_000877.h5
+/store/swissai/a03/datasets/CCD/h5_files/Crash-1500_000317.h5
+/store/swissai/a03/datasets/CCD/h5_files/Crash-1500_001002.h5
+/store/swissai/a03/datasets/CCD/h5_files/Crash-1500_001265.h5
+/store/swissai/a03/datasets/CCD/h5_files/Crash-1500_001415.h5
+/store/swissai/a03/datasets/CCD/h5_files/Crash-1500_001108.h5
+/store/swissai/a03/datasets/CCD/h5_files/Crash-1500_000146.h5
+/store/swissai/a03/datasets/CCD/h5_files/Crash-1500_001182.h5
+/store/swissai/a03/datasets/CCD/h5_files/Crash-1500_000036.h5
+/store/swissai/a03/datasets/CCD/h5_files/Crash-1500_001366.h5
+/store/swissai/a03/datasets/CCD/h5_files/Crash-1500_000791.h5
+/store/swissai/a03/datasets/CCD/h5_files/Crash-1500_000683.h5

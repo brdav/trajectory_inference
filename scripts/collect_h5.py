@@ -29,7 +29,7 @@ H5_DIRS = [
     # "HONDAHDD",  # not ready yet
 ]
 
-NODES = 256
+NODES = 1024
 
 def collect_path(path):
     try:

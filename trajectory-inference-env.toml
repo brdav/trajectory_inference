@@ -1,6 +1,6 @@
-image = "/capstor/scratch/cscs/pmartell/trajectory-inference-image.sqsh"
+image = "/capstor/scratch/cscs/pmartell/droid-slam.sqsh"
 
-mounts = ["/capstor", "/users"]
+mounts = ["/capstor", "/users", "/store"]
 
 writable = true
 
