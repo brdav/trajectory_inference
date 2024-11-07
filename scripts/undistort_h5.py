@@ -1,6 +1,6 @@
 import os
 import argparse
-import queue
+import numpy as np
 from pathlib import Path
 import h5py
 import cv2
@@ -9,12 +9,11 @@ import multiprocessing as mp
 
 parser = argparse.ArgumentParser(prog="Undistort_h5")
 # paths
-parser.add_argument("--base-dir", type=str)
-parser.add_argument("--replace-from", type=str)
-parser.add_argument("--replace-to", type=str)
+parser.add_argument("--load-dir", type=str)
+parser.add_argument("--save-dir", type=str)
 parser.add_argument("--log-dir", type=str, default=".")
 # tuning parameters
-parser.add_argument("--processes", type=int, default=64)
+parser.add_argument("--processes", type=int, default=1)
 parser.add_argument("--chunk-size", type=int, default=48)
 parser.add_argument("--image-height", type=int, default=576)
 parser.add_argument("--image-width", type=int, default=1024)
@@ -28,11 +27,9 @@ def process_files(rank, args, file_queue):
         if file_path == "DONE":
             break
 
+        save_path = file_path.replace(args.load_dir, args.save_dir)
         try:  # catch all errors
-            os.makedirs(
-                os.path.dirname(file_path).replace(args.replace_from, args.replace_to),
-                exist_ok=True,
-            )
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
             with h5py.File(file_path, "r") as read_f:
                 with h5py.File(
@@ -45,15 +42,13 @@ def process_files(rank, args, file_queue):
                     K = read_calib_f["camera"][:]
                     dist = read_calib_f["distortion"][:]
 
-                with h5py.File(
-                    os.path.join(
-                        os.path.dirname(file_path).replace(
-                            args.replace_from, args.replace_to
-                        ),
-                        os.path.basename(file_path),
-                    ),
-                    "w",
-                ) as write_f:
+                if len(dist) == 6:
+                    # opencv does only accept length 5 or 8
+                    tmp = np.zeros(8, dtype=np.float32)
+                    tmp[: len(dist)] = dist
+                    dist = tmp
+
+                with h5py.File(save_path, "w") as write_f:
                     new_K, _ = cv2.getOptimalNewCameraMatrix(
                         K,
                         dist,
@@ -72,10 +67,8 @@ def process_files(rank, args, file_queue):
 
                     with h5py.File(
                         os.path.join(
-                            os.path.dirname(file_path).replace(
-                                args.replace_from, args.replace_to
-                            ),
-                            f"camera_{os.path.basename(file_path)}",
+                            os.path.dirname(save_path),
+                            f"camera_{os.path.basename(save_path)}",
                         ),
                         "w",
                     ) as write_calib_f:
@@ -125,23 +118,14 @@ def process_files(rank, args, file_queue):
             with open(os.path.join(args.log_dir, "failed_undistort_h5.txt"), "a") as f:
                 f.write(f"{file_path} REASON: {e}\n")
             try:
-                os.remove(
-                    os.path.join(
-                        os.path.dirname(file_path).replace(
-                            args.replace_from, args.replace_to
-                        ),
-                        os.path.basename(file_path),
-                    )
-                )
+                os.remove(save_path)
             except OSError:
                 pass
             try:
                 os.remove(
                     os.path.join(
-                        os.path.dirname(file_path).replace(
-                            args.replace_from, args.replace_to
-                        ),
-                        f"camera_{os.path.basename(file_path)}",
+                        os.path.dirname(save_path),
+                        f"camera_{os.path.basename(save_path)}",
                     )
                 )
             except OSError:
@@ -152,10 +136,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    file_paths = sorted(Path(args.base_dir).rglob("*.h5"))
-    file_paths = [f for f in file_paths if "camera_" not in str(f)]
-    file_paths = [f for f in file_paths if "depth_" not in str(f)]
-    file_paths = [f for f in file_paths if "trajectory_" not in str(f)]
+    file_paths = sorted(Path(args.load_dir).rglob("*.h5"))
+    file_paths = [str(f) for f in file_paths]
+    file_paths = [f for f in file_paths if "camera_" not in f]
+    file_paths = [f for f in file_paths if "depth_" not in f]
+    file_paths = [f for f in file_paths if "trajectory_" not in f]
     file_queue = mp.Queue()
     for p in file_paths:
         file_queue.put(p)

@@ -16,6 +16,8 @@ from geocalib import GeoCalib
 parser = argparse.ArgumentParser(prog="GeoCalib_inference")
 # paths
 parser.add_argument("--file-list", type=str, default="./h5_file_list.txt")
+parser.add_argument("--replace-from", type=str)
+parser.add_argument("--replace-to", type=str)
 # tuning parameters
 parser.add_argument("--num-gpus", type=int, default=4)
 parser.add_argument("--num-proc-per-gpu", type=int, default=1)
@@ -115,8 +117,10 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
 
         try:  # catch all errors
             file_path = file_paths[file_idx]
-            proc_dirpath = os.path.dirname(file_path) + "_proc"
-            os.makedirs(os.path.join(proc_dirpath), exist_ok=True)
+            proc_dirpath = os.path.dirname(
+                file_path.replace(args.replace_from, args.replace_to)
+            )
+            os.makedirs(proc_dirpath, exist_ok=True)
 
             # check if file is already processed
             if os.path.exists(

@@ -17,6 +17,8 @@ EXP_NAME="traj_node_${NODE_IDX}"
 
 srun python3 scripts/geocalib_inference.py \
     --file-list $FILE_PATHS_LIST \
+    --replace-from "/store/swissai/a03/datasets" \
+    --replace-to "${SCRATCH}/datasets \
     --log-dir "./logs" \
     --num-gpus $NUM_GPUS \
     --num-proc-per-gpu 4 \
@@ -28,6 +30,8 @@ srun python3 scripts/geocalib_inference.py \
 
 srun python3 scripts/depthanything_inference.py \
     --file-list $FILE_PATHS_LIST \
+    --replace-from "/store/swissai/a03/datasets" \
+    --replace-to "${SCRATCH}/datasets \
     --weights-dir "/capstor/scratch/cscs/pmartell/trajectory_inference/weights" \
     --log-dir "./logs" \
     --num-gpus $NUM_GPUS \
@@ -41,6 +45,8 @@ srun python3 scripts/depthanything_inference.py \
 
 srun python3 scripts/droidslam_inference.py \
     --file-list $FILE_PATHS_LIST \
+    --replace-from "/store/swissai/a03/datasets" \
+    --replace-to "${SCRATCH}/datasets \
     --weights "/capstor/scratch/cscs/pmartell/trajectory_inference/weights/droid.pth" \
     --log-dir "./logs" \
     --num-gpus $NUM_GPUS \
