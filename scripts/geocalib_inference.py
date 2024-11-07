@@ -6,7 +6,7 @@ from functools import partial
 import h5py
 import numpy as np
 import torch
-import torch.multiprocessing as mp
+import multiprocessing as mp
 from torch.utils.data import Dataset, DataLoader, Sampler, get_worker_info
 from torch.profiler import profile, ProfilerActivity
 

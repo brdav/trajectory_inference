@@ -69,7 +69,7 @@ srun --nodes=$NODES \
     --file-list "$FILE_PATHS_LIST" \
     --weights "/capstor/scratch/cscs/pmartell/trajectory_inference/weights/droid.pth" \
     --log-dir "./logs" \
-    --num-gpus 3 \
+    --num-gpus "$NUM_GPUS" \
     --num-proc-per-gpu 1 \
     --trajectory-length 6000 \
     --trajectory-overlap 100 \

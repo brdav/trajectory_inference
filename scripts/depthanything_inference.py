@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.multiprocessing as mp
+import multiprocessing as mp
 from torch.utils.data import Dataset, DataLoader, get_worker_info, Sampler
 from torch.profiler import profile, ProfilerActivity
 from torchvision.transforms import Compose
