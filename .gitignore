@@ -8,6 +8,7 @@ weights/
 __pycache__/
 *.egg-info/
 
+core_nid*
 # extra module
 build/
 dist/

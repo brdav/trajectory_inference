@@ -64,19 +64,18 @@ class H5Dataset(Dataset):
         # why fill dataset at getitem rather than init?
         # each worker (which are forked after the init) need to have their own file handle
         if self.file_paths[self.file_idx.value] != self.current_path:
+            print(f"DroidSLAM - file change: {self.file_idx.value}")
             self.current_path = self.file_paths[self.file_idx.value]
-            # video
-            self.file = h5py.File(self.current_path, "r")
-            self.dataset = self.file.get("video")
-            # depth
-            self.depth_file = h5py.File(
+            with h5py.File(self.current_path, "r") as file:
+                self.dataset = file["video"][:]
+            with h5py.File(
                 os.path.join(
                     os.path.dirname(self.current_path) + "_proc",
                     f"depth_{os.path.basename(self.current_path)}",
                 ),
                 "r",
-            )
-            self.depth_dataset = self.depth_file.get("depth")
+            ) as file:
+                self.depth_dataset = file["depth"][:]
             # intrinsics
             with h5py.File(
                 os.path.join(

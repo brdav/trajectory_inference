@@ -51,7 +51,7 @@ srun --nodes=$NODES \
     --log-dir "./logs" \
     --num-gpus "$NUM_GPUS" \
     --num-proc-per-gpu 1 \
-    --buffer-size 2048 \
+    --buffer-size 1024 \
     --batch-size 128 \
     --num-workers 24 \
     --encoder "vits" \
@@ -69,9 +69,9 @@ srun --nodes=$NODES \
     --file-list "$FILE_PATHS_LIST" \
     --weights "/capstor/scratch/cscs/pmartell/trajectory_inference/weights/droid.pth" \
     --log-dir "./logs" \
-    --num-gpus "$NUM_GPUS" \
+    --num-gpus 1 \
     --num-proc-per-gpu 1 \
-    --trajectory-length 6000 \
+    --trajectory-length 1500 \
     --trajectory-overlap 100 \
     --min-trajectory-length 100 \
     --num-workers 24 \

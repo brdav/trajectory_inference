@@ -79,9 +79,12 @@ class H5Dataset(Dataset):
         # why fill dataset at getitem rather than init?
         # each worker (which are forked after the init) need to have their own file handle
         if self.file_paths[self.file_idx.value] != self.current_path:
+            print(f"Depth - file change: {self.file_idx.value}")
             self.current_path = self.file_paths[self.file_idx.value]
             self.file = h5py.File(self.current_path, "r")
-            self.dataset = self.file.get("video")
+            self.dataset = self.file.get("video")[:]
+            self.file.close()
+            
         img = self.dataset[idx] / 255.0
         return self.transform({"image": img})["image"]
 

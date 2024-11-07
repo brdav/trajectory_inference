@@ -51,16 +51,17 @@ class H5Dataset(Dataset):
 
     def __init__(self, file_paths):
         self.file_paths = file_paths
-        self.current_path = None
 
     def __getitem__(self, idx):
         # why fill dataset at getitem rather than init?
         # each worker (which are forked after the init) need to have their own file handle
         if self.file_paths[self.file_idx.value] != self.current_path:
+            print(f"Geocalib - file change: {self.file_idx.value}")
             self.current_path = self.file_paths[self.file_idx.value]
-            self.file = h5py.File(self.current_path, "r")
-            self.dataset = self.file.get("video")
-        return (self.dataset[idx].transpose(2, 0, 1) / 255.0).astype(np.float32)
+        
+        with h5py.File(self.current_path, "r") as file:
+            self.dataset = file.get("video")[idx]
+            return (self.dataset[idx].transpose(2, 0, 1) / 255.0).astype(np.float32)
 
 
 def init_fn(v_file_idx, worker_id):
@@ -168,7 +169,8 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
 
                 if args.camera_model == "pinhole":
                     result = model.calibrate(
-                        data, camera_model="pinhole", shared_intrinsics=True
+                        data, camera_model="pinhole", shared_intrinsics=True,
+                        num_steps=200
                     )
                     # no distortion parameters because we use pinhole model
                     K = result["camera"].K
@@ -177,7 +179,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                 else:
                     # batched inference is unfortunately not possible
                     results = [
-                        model.calibrate(d, camera_model=args.camera_model) for d in data
+                        model.calibrate(d, camera_model=args.camera_model, num_steps=200) for d in data
                     ]
                     K = torch.concatenate([r["camera"].K for r in results], dim=0)
                     rp = torch.concatenate([r["gravity"].rp for r in results], dim=0)
@@ -232,6 +234,9 @@ if __name__ == "__main__":
 
     assert args.num_workers > 0
 
+    # print current time
+    from datetime import datetime
+    print(datetime.now())
     print("Starting GeoCalib with the following parameters:")
     print(f"exp-name: {args.exp_name}")
     print(f"num-gpus: {args.num_gpus}")
