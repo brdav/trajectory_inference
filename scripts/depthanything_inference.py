@@ -132,10 +132,10 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
     )
 
     while not file_queue.empty():
-        try:
-            file_idx = file_queue.get_nowait()
-        except queue.Empty:
-            break
+        while True:
+            file_idx = file_queue.get()
+            if file_idx == "DONE":
+                break
 
         try:  # catch all errors
             file_path = file_paths[file_idx]
@@ -144,9 +144,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
 
             # check if file is already processed
             if os.path.exists(
-                os.path.join(
-                    proc_dirpath, f"depth_{os.path.basename(file_path)}"
-                )
+                os.path.join(proc_dirpath, f"depth_{os.path.basename(file_path)}")
             ):
                 try:
                     with h5py.File(
@@ -181,9 +179,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
 
             # open target h5
             with h5py.File(
-                os.path.join(
-                    proc_dirpath, f"depth_{os.path.basename(file_path)}"
-                ),
+                os.path.join(proc_dirpath, f"depth_{os.path.basename(file_path)}"),
                 "w",
             ) as depth_file:
 
@@ -269,6 +265,8 @@ if __name__ == "__main__":
 
     for file_idx in range(len(file_paths)):
         file_queue.put(file_idx)
+    for file_idx in range(args.num_gpus):
+        file_queue.put("DONE")
 
     # model config
     dataset = "vkitti"  # 'hypersim' for indoor model, 'vkitti' for outdoor model

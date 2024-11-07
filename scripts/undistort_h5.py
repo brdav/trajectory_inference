@@ -22,10 +22,10 @@ parser.add_argument("--h5-chunk-size", type=int, default=24)
 
 
 def process_files(rank, args, file_queue):
-    while not file_queue.empty():
-        try:
-            file_path = file_queue.get_nowait()
-        except queue.Empty:
+
+    while True:
+        file_path = file_queue.get()
+        if file_path == "DONE":
             break
 
         try:  # catch all errors
@@ -159,6 +159,8 @@ if __name__ == "__main__":
     file_queue = mp.Queue()
     for p in file_paths:
         file_queue.put(p)
+    for p in range(args.processes):
+        file_queue.put("DONE")
 
     processes = []
     for rank in range(args.processes):
