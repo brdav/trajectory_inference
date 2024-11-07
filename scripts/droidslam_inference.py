@@ -9,10 +9,11 @@ import numpy as np
 import cv2
 import torch
 import torch.nn as nn
-import torch.multiprocessing as mp
+from multiprocessing import Process, Queue, Value, get_start_method
 from torch.utils.data import Dataset, DataLoader, Sampler, get_worker_info
 from torch.profiler import profile, ProfilerActivity
 from lietorch import SO3
+import multiprocessing as mp
 
 from droid_trajectory.droid_core.droid import Droid
 
@@ -159,27 +160,15 @@ def get_pose_matrix(traj):
 
 
 def process_files(rank, p_rank, args, file_queue, file_paths):
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(rank)
-    import queue
-    from functools import partial
-    import h5py
-    import numpy as np
-    import torch
-    import torch.nn as nn
-    import torch.multiprocessing as mp
-    from torch.utils.data import Dataset, DataLoader, Sampler, get_worker_info
-    from torch.profiler import profile, ProfilerActivity
-    from lietorch import SO3
-
     print(f">>>>>>>>>>>>>>>>>>> Started process {p_rank} on GPU {rank}")
     print(">>>>>>>>>>> NUMBER OF GPUs: ", torch.cuda.device_count())
 
     # just in case DroidSLAM internals use default
-    # torch.cuda.set_device(f"cuda")
+    torch.cuda.set_device(f"cuda:{rank}")
 
     # define global
-    v_file_idx = mp.Value("i", 0)
-    v_index_offset = mp.Value("i", 0)
+    v_file_idx = Value("i", 0)
+    v_index_offset = Value("i", 0)
 
     # run profiler on rank 0 GPU only
     if (not args.no_profiler) and (rank == 0):
@@ -308,7 +297,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
                         image_size=[crop_height, crop_width],
                         upsample=True,
                         buffer=args.trajectory_length,
-                        device=f"cuda",
+                        device=f"cuda:{rank}",
                     )
 
                     # assign new trajectory
