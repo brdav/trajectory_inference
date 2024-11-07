@@ -213,11 +213,10 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
         worker_init_fn=partial(init_fn, v_file_idx, v_index_offset),
     )
 
-    while not file_queue.empty():
-        while True:
-            file_idx = file_queue.get()
-            if file_idx == "DONE":
-                break
+    while True:
+        file_idx = file_queue.get()
+        if file_idx == "DONE":
+            break
 
         try:  # catch all errors
             file_path = file_paths[file_idx]
