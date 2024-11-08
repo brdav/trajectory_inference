@@ -83,7 +83,7 @@ class H5Dataset(Dataset):
         if self.file_paths[self.file_idx.value] != self.current_path:
             print(f"Depth - file change: {self.file_idx.value}")
             self.current_path = self.file_paths[self.file_idx.value]
-        
+
         with h5py.File(self.current_path, "r") as f:
             img = f.get("video")[idx] / 255.0
         return self.transform({"image": img})["image"]
@@ -146,33 +146,39 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
             )
             os.makedirs(proc_dirpath, exist_ok=True)
 
+            # check also this directory (legacy)
+            check_dirpath = os.path.dirname(file_path) + "_proc"
+
             # check if file is already processed
-            if os.path.exists(
-                os.path.join(proc_dirpath, f"depth_{os.path.basename(file_path)}")
-            ):
-                try:
-                    with h5py.File(
-                        os.path.join(
-                            proc_dirpath,
-                            f"depth_{os.path.basename(file_path)}",
-                        ),
-                        "r",
-                    ) as depth_file:
-                        num_written = depth_file["num_written"][0]
-                        tmp = depth_file["depth"][num_written - 1]
-                    assert not np.array_equal(tmp, np.zeros_like(tmp))
-                    print(f"Depth H5 file for {file_path} already processed, skipping!")
-                    continue
-                except Exception as e:
-                    print(
-                        f"Depth H5 file for {file_path} seems to be corrupt. Will overwrite."
-                    )
-                    os.remove(
-                        os.path.join(
-                            proc_dirpath,
-                            f"depth_{os.path.basename(file_path)}",
+            for d in [check_dirpath, proc_dirpath]:
+                if os.path.exists(
+                    os.path.join(d, f"depth_{os.path.basename(file_path)}")
+                ):
+                    try:
+                        with h5py.File(
+                            os.path.join(
+                                d,
+                                f"depth_{os.path.basename(file_path)}",
+                            ),
+                            "r",
+                        ) as depth_file:
+                            num_written = depth_file["num_written"][0]
+                            tmp = depth_file["depth"][num_written - 1]
+                        assert not np.array_equal(tmp, np.zeros_like(tmp))
+                        print(
+                            f"Depth H5 file for {file_path} already processed, skipping!"
                         )
-                    )
+                        continue
+                    except Exception as e:
+                        print(
+                            f"Depth H5 file for {file_path} seems to be corrupt. Will overwrite."
+                        )
+                        os.remove(
+                            os.path.join(
+                                d,
+                                f"depth_{os.path.basename(file_path)}",
+                            )
+                        )
 
             with h5py.File(file_path, "r") as f:
                 num_written = f["num_written"][0]
@@ -230,7 +236,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
 
                         if (not args.no_profiler) and (rank == 0):
                             prof.step()
-                        
+
                 # dump the rest
                 depth_pred_np = torch.cat(depth_pred, dim=0).cpu().numpy()
                 depth_ds[write_idx:] = depth_pred_np

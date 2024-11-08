@@ -58,10 +58,13 @@ class H5Dataset(Dataset):
     def __getitem__(self, idx):
         # why fill dataset at getitem rather than init?
         # each worker (which are forked after the init) need to have their own file handle
-        if self.current_path is None or self.file_paths[self.file_idx.value] != self.current_path:
+        if (
+            self.current_path is None
+            or self.file_paths[self.file_idx.value] != self.current_path
+        ):
             print(f"Geocalib - file change: {self.file_idx.value}")
             self.current_path = self.file_paths[self.file_idx.value]
-        
+
         with h5py.File(self.current_path, "r") as file:
             dataset = file.get("video")[idx]
             return (dataset.transpose(2, 0, 1) / 255.0).astype(np.float32)
@@ -124,32 +127,38 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
             )
             os.makedirs(proc_dirpath, exist_ok=True)
 
+            # check also this directory (legacy)
+            check_dirpath = os.path.dirname(file_path) + "_proc"
+
             # check if file is already processed
-            if os.path.exists(
-                os.path.join(proc_dirpath, f"camera_{os.path.basename(file_path)}")
-            ):
-                try:
-                    with h5py.File(
-                        os.path.join(
-                            proc_dirpath,
-                            f"camera_{os.path.basename(file_path)}",
-                        ),
-                        "r",
-                    ) as calib_file:
-                        K = calib_file["camera"][:]
-                    assert K.shape == (3, 3)
-                    print(f"Calib H5 file for {file_path} already processed, skipping!")
-                    continue
-                except Exception as e:
-                    print(
-                        f"Calib H5 file for {file_path} seems to be corrupt. Will overwrite."
-                    )
-                    os.remove(
-                        os.path.join(
-                            proc_dirpath,
-                            f"camera_{os.path.basename(file_path)}",
+            for d in [check_dirpath, proc_dirpath]:
+                if os.path.exists(
+                    os.path.join(d, f"camera_{os.path.basename(file_path)}")
+                ):
+                    try:
+                        with h5py.File(
+                            os.path.join(
+                                d,
+                                f"camera_{os.path.basename(file_path)}",
+                            ),
+                            "r",
+                        ) as calib_file:
+                            K = calib_file["camera"][:]
+                        assert K.shape == (3, 3)
+                        print(
+                            f"Calib H5 file for {file_path} already processed, skipping!"
                         )
-                    )
+                        continue
+                    except Exception as e:
+                        print(
+                            f"Calib H5 file for {file_path} seems to be corrupt. Will overwrite."
+                        )
+                        os.remove(
+                            os.path.join(
+                                d,
+                                f"camera_{os.path.basename(file_path)}",
+                            )
+                        )
 
             with h5py.File(file_path, "r") as f:
                 num_written = f["num_written"][0]
@@ -169,7 +178,9 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
 
                 if args.camera_model == "pinhole":
                     result = model.calibrate(
-                        data, camera_model="pinhole", shared_intrinsics=True,
+                        data,
+                        camera_model="pinhole",
+                        shared_intrinsics=True,
                     )
                     # no distortion parameters because we use pinhole model
                     K = result["camera"].K
@@ -178,7 +189,10 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                 else:
                     # batched inference is unfortunately not possible
                     results = [
-                        model.calibrate(d, camera_model=args.camera_model, num_steps=200) for d in data
+                        model.calibrate(
+                            d, camera_model=args.camera_model, num_steps=200
+                        )
+                        for d in data
                     ]
                     K = torch.concatenate([r["camera"].K for r in results], dim=0)
                     rp = torch.concatenate([r["gravity"].rp for r in results], dim=0)
@@ -235,6 +249,7 @@ if __name__ == "__main__":
 
     # print current time
     from datetime import datetime
+
     print(datetime.now())
     print("Starting GeoCalib with the following parameters:")
     print(f"exp-name: {args.exp_name}")

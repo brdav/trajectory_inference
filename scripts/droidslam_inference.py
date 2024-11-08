@@ -225,38 +225,42 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
             )
             os.makedirs(proc_dirpath, exist_ok=True)
 
+            # check also this directory (legacy)
+            check_dirpath = os.path.dirname(file_path) + "_proc"
+
             # check if file is already processed
-            if os.path.exists(
-                os.path.join(
-                    proc_dirpath,
-                    f"trajectory_{os.path.basename(file_path)}",
-                )
-            ):
-                try:
-                    with h5py.File(
-                        os.path.join(
-                            proc_dirpath,
-                            f"trajectory_{os.path.basename(file_path)}",
-                        ),
-                        "r",
-                    ) as trajectory_file:
-                        num_written = trajectory_file["num_written"][0]
-                        tmp = trajectory_file["merged_trajectory"][num_written - 1]
-                    assert not np.array_equal(tmp, np.zeros_like(tmp))
-                    print(
-                        f"Trajectory H5 file for {file_path} already processed, skipping!"
+            for d in [check_dirpath, proc_dirpath]:
+                if os.path.exists(
+                    os.path.join(
+                        d,
+                        f"trajectory_{os.path.basename(file_path)}",
                     )
-                    continue
-                except Exception as e:
-                    print(
-                        f"Trajectory H5 file for {file_path} seems to be corrupt. Will overwrite."
-                    )
-                    os.remove(
-                        os.path.join(
-                            proc_dirpath,
-                            f"trajectory_{os.path.basename(file_path)}",
+                ):
+                    try:
+                        with h5py.File(
+                            os.path.join(
+                                d,
+                                f"trajectory_{os.path.basename(file_path)}",
+                            ),
+                            "r",
+                        ) as trajectory_file:
+                            num_written = trajectory_file["num_written"][0]
+                            tmp = trajectory_file["merged_trajectory"][num_written - 1]
+                        assert not np.array_equal(tmp, np.zeros_like(tmp))
+                        print(
+                            f"Trajectory H5 file for {file_path} already processed, skipping!"
                         )
-                    )
+                        continue
+                    except Exception as e:
+                        print(
+                            f"Trajectory H5 file for {file_path} seems to be corrupt. Will overwrite."
+                        )
+                        os.remove(
+                            os.path.join(
+                                d,
+                                f"trajectory_{os.path.basename(file_path)}",
+                            )
+                        )
 
             with h5py.File(file_path, "r") as f:
                 num_written = f["num_written"][0]
