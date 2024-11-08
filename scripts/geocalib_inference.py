@@ -126,6 +126,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                 file_path.replace(args.replace_from, args.replace_to)
             )
             os.makedirs(proc_dirpath, exist_ok=True)
+            should_continue = False
 
             # check also this directory (legacy)
             check_dirpath = os.path.dirname(file_path) + "_proc"
@@ -148,7 +149,8 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                         print(
                             f"Calib H5 file for {file_path} already processed, skipping!"
                         )
-                        continue
+                        should_continue = True
+                        break
                     except Exception as e:
                         print(
                             f"Calib H5 file for {file_path} seems to be corrupt. Will overwrite."
@@ -159,7 +161,10 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                                 f"camera_{os.path.basename(file_path)}",
                             )
                         )
-
+            
+            if should_continue:
+                continue
+            
             with h5py.File(file_path, "r") as f:
                 num_written = f["num_written"][0]
 

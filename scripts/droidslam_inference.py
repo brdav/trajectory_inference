@@ -249,6 +249,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
             # check also this directory (legacy)
             check_dirpath = os.path.dirname(file_path) + "_proc"
             os.makedirs(proc_dirpath, exist_ok=True)
+            should_continue = False
 
             # check if file is already processed
             for d in [check_dirpath, proc_dirpath]:
@@ -272,7 +273,8 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
                         print(
                             f"Trajectory H5 file for {file_path} already processed, skipping!"
                         )
-                        continue
+                        should_continue = True
+                        break
                     except Exception as e:
                         print(
                             f"Trajectory H5 file for {file_path} seems to be corrupt. Will overwrite."
@@ -283,6 +285,9 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
                                 f"trajectory_{os.path.basename(file_path)}",
                             )
                         )
+
+            if should_continue:
+                continue
 
             with h5py.File(file_path, "r") as f:
                 num_written = f["num_written"][0]
