@@ -201,7 +201,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                         args.image_height,
                         args.image_width,
                     ),
-                    dtype="uint16",
+                    dtype="float16",
                 )
                 depth_file.create_dataset(
                     "num_written", data=[num_written], dtype="int32"
@@ -219,11 +219,8 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                             mode="bilinear",
                             align_corners=True,
                         )[:, 0]
-                        # convert to uint16
-                        predictions *= 65535 / 80
-                        predictions = torch.round(
-                            torch.clamp(predictions, min=0, max=65535)
-                        ).to(int)
+                        # convert to float16 (normalize by maxdepth)
+                        predictions /= 80
                         depth_pred.append(predictions)
                         if len(depth_pred) * args.batch_size >= args.buffer_size:
                             # dump buffer to file
