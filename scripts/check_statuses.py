@@ -21,14 +21,9 @@ H5_DIRS = [
     "YouTubeCrash/h5_files/accident",
     "YouTubeCrash/h5_files/nonaccident",
     "bdd100k/h5",
-    "kitti_h5",
+    "kitti_h5/data_h5",
     "nuplan_h5",
     "HondaHDD/extracted",
-    # # "DrivingDojo_h5",  # undistort first --> README
-    # "HondaHAD/had_data_h5",
-    # # "ONCE",  # undistort first --> README
-    # "cityscapes_h5",
-    # # "dad_streetaccident",
 ]
 
 def check_status_of_depth(file):
@@ -43,6 +38,8 @@ def check_status_of_depth(file):
     except Exception as e:
         # print(e)
         # print(f"Error opening {file}. Moving on.")
+        os.remove(file)
+        print("REMOVED", file)
         with open("bad_files.txt", "a") as f:
             f.write(f"{file}\n")
         return False
@@ -60,9 +57,12 @@ def collect_frames():
         # Filter out all paths whose filenames start with camera_, depth_ or trajectory_
         paths = [p for p in paths if any([p.name.startswith(x) for x in ["depth_"]])]
         statuses = p_map(check_status_of_depth, paths)
+        if len(statuses) == 0:
+            print(f"Dataset: {dataset} -> found nothing")
+            continue
         true_statuses = [s for s in statuses if s]
         # print ratio of completion 
-        print(f"Dataset: {dataset}, {len(true_statuses)}/{len(statuses)*100:.2f}%")
+        print(f"Dataset: {dataset}, {float(len(true_statuses))/len(statuses)*100:.2f}%")
 
 def main():
     collect_frames()

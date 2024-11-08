@@ -20,14 +20,9 @@ H5_DIRS = [
     "YouTubeCrash/h5_files/accident",
     "YouTubeCrash/h5_files/nonaccident",
     "bdd100k/h5",
-    "kitti_h5",
+    "kitti_h5/data_h5",
     "nuplan_h5",
     "HondaHDD/extracted",
-    # # "DrivingDojo_h5",  # undistort first --> README
-    # "HondaHAD/had_data_h5",
-    # # "ONCE",  # undistort first --> README
-    # "cityscapes_h5",
-    # # "dad_streetaccident",
 ]
 
 NODES = 600

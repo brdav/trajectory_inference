@@ -58,12 +58,13 @@ class SequentialSampler(Sampler):
 
 class H5Dataset(Dataset):
 
-    def __init__(self, file_paths, resize_size, crop_size, image_size):
+    def __init__(self, file_paths, resize_size, crop_size, image_size, args):
         self.file_paths = file_paths
         self.resize_size = resize_size
         self.crop_size = crop_size
         self.image_size = image_size
         self.current_path = None
+        self.args = args
 
     def __getitem__(self, idx):
         # why fill dataset at getitem rather than init?
@@ -111,19 +112,30 @@ class H5Dataset(Dataset):
         with h5py.File(self.current_path, "r") as file:
             image = file.get("video")[idx + self.index_offset.value]
 
-        with h5py.File(
-            os.path.join(
-                os.path.dirname(self.current_path) + "_proc",
-                f"depth_{os.path.basename(self.current_path)}",
-            ),
-            "r",
-        ) as file:
-            depth = file.get("depth")[idx + self.index_offset.value]
-            if "is_float16" in file and file["is_float16"][0] == 1:
-                depth = depth.astype(float) * 80
-                assert depth.dtype == np.float16, f"inconsistent!!! depth dtype: {depth.dtype}. depth values: {depth}"
-            else:
-                assert depth.dtype == np.float32, f"inconsistent!!! depth dtype: {depth.dtype}"
+        proc_dirpath = os.path.dirname(
+            self.current_path.replace(self.args.replace_from, self.args.replace_to)
+        )
+        check_dirpath = os.path.dirname(self.current_path) + "_proc" # LEGACY
+        depth = None
+        for d in [check_dirpath, proc_dirpath]:
+            try:
+                with h5py.File(
+                    os.path.join(d, f"depth_{os.path.basename(self.current_path)}"),
+                    "r",
+                ) as file:
+                    depth = file.get("depth")[idx + self.index_offset.value]
+                    if "is_float16" in file and file["is_float16"][0] == 1:
+                        depth = depth.astype(float) * 80
+                        assert depth.dtype == np.float16, f"inconsistent!!! depth dtype: {depth.dtype}. depth values: {depth}"
+                    else:
+                        assert depth.dtype == np.float32, f"inconsistent!!! depth dtype: {depth.dtype}"
+                    
+                    print(f"Found depth in {d}")
+                    break
+            except Exception as e:
+                print(f"Error loading depth from {d}. Trying another path.")
+                depth = None
+        assert depth is not None, f"Depth not found for {self.current_path}"
 
         if self.undistort:
             image = cv2.remap(image, self.mapx, self.mapy, cv2.INTER_LINEAR)
@@ -209,6 +221,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
         resize_size=[resize_height, resize_width],
         crop_size=[crop_height, crop_width],
         image_size=[args.image_height, args.image_width],
+        args=args,
     )
     data_loader = DataLoader(
         dataset,
@@ -232,10 +245,10 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
             proc_dirpath = os.path.dirname(
                 file_path.replace(args.replace_from, args.replace_to)
             )
-            os.makedirs(proc_dirpath, exist_ok=True)
 
             # check also this directory (legacy)
             check_dirpath = os.path.dirname(file_path) + "_proc"
+            os.makedirs(proc_dirpath, exist_ok=True)
 
             # check if file is already processed
             for d in [check_dirpath, proc_dirpath]:
