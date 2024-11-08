@@ -13,7 +13,8 @@ from multiprocessing import Process, Queue, Value, get_start_method
 from torch.utils.data import Dataset, DataLoader, Sampler, get_worker_info
 from torch.profiler import profile, ProfilerActivity
 from lietorch import SO3
-import multiprocessing as mp
+# import multiprocessing as mp
+from collections import deque
 
 from droid_trajectory.droid_core.droid import Droid
 
@@ -218,7 +219,8 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
     )
 
     while True:
-        file_idx = file_queue.get()
+        # file_idx = file_queue.get()
+        file_idx = file_queue.popleft()
         if file_idx == "DONE":
             break
 
@@ -426,12 +428,14 @@ if __name__ == "__main__":
     split_pts = np.round(np.linspace(0, len(file_paths), 5)).astype(int)
     file_paths = file_paths[split_pts[args.file_list_idx]: split_pts[args.file_list_idx + 1]]
 
-    file_queue = mp.Queue()
+    file_queue = deque()  # mp.Queue()
 
     for file_idx in range(len(file_paths)):
-        file_queue.put(file_idx)
+        # file_queue.put(file_idx)
+        file_queue.append(file_idx)
     # for file_idx in range(args.num_gpus):
-    file_queue.put("DONE")
+    # file_queue.put("DONE")
+    file_queue.append("DONE")
 
     os.makedirs(args.log_dir, exist_ok=True)
 
