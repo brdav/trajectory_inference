@@ -2,7 +2,7 @@
 
 # Job parameters
 JOB_NAME="trajectory_inference"
-TIME_LIMIT="6:00:00"
+TIME_LIMIT="12:00:00"
 ENVIRONMENT="trajectory-inference-env"
 NODES=1
 ACCOUNT="a03"
@@ -26,7 +26,7 @@ srun --nodes=$NODES \
     --account=a03 \
     --mem=460000 \
     --ntasks-per-node=1 \
-    --time=6:00:00 \
+    --time="$TIME_LIMIT" \
     ./prep.sh python3 scripts/geocalib_inference.py \
     --file-list "$FILE_PATHS_LIST" \
     --log-dir "./logs" \
@@ -36,6 +36,8 @@ srun --nodes=$NODES \
     --num-workers 24 \
     --camera-model "pinhole" \
     --exp-name "$EXP_NAME" \
+    --replace-from "/store/swissai/a03/datasets/" \
+    --replace-to "/capstor/scratch/cscs/pmartell/datasets/" \
     --no-profiler || true
 
 # # Run the second script
@@ -44,7 +46,7 @@ srun --nodes=$NODES \
     --account=a03 \
     --mem=460000 \
     --ntasks-per-node=1 \
-    --time=6:00:00 \
+    --time="$TIME_LIMIT" \
     ./prep.sh python3 scripts/depthanything_inference.py \
     --file-list "$FILE_PATHS_LIST" \
     --weights-dir "/capstor/scratch/cscs/pmartell/trajectory_inference/weights" \
@@ -55,28 +57,32 @@ srun --nodes=$NODES \
     --batch-size 128 \
     --num-workers 24 \
     --encoder "vits" \
+    --replace-from "/store/swissai/a03/datasets/" \
+    --replace-to "/capstor/scratch/cscs/pmartell/datasets/" \
     --exp-name "$EXP_NAME" \
     --no-profiler || true
 
 # # Run the third script
-srun --nodes=$NODES \
-    --environment="$ENVIRONMENT" \
-    --account=a03 \
-    --mem=460000 \
-    --ntasks-per-node=1 \
-    --time=6:00:00 \
-    ./prep.sh python3 scripts/droidslam_inference.py \
-    --file-list "$FILE_PATHS_LIST" \
-    --weights "/capstor/scratch/cscs/pmartell/trajectory_inference/weights/droid.pth" \
-    --log-dir "./logs" \
-    --num-gpus 1 \
-    --num-proc-per-gpu 1 \
-    --trajectory-length 1700 \
-    --trajectory-overlap 100 \
-    --min-trajectory-length 100 \
-    --num-workers 24 \
-    --exp-name "$EXP_NAME" \
-    --no-profiler || true
+# srun --nodes=$NODES \
+#     --environment="$ENVIRONMENT" \
+#     --account=a03 \
+#     --mem=460000 \
+#     --ntasks-per-node=1 \
+#     --time="$TIME_LIMIT" \
+#     ./prep.sh python3 scripts/droidslam_inference.py \
+#     --file-list "$FILE_PATHS_LIST" \
+#     --weights "/capstor/scratch/cscs/pmartell/trajectory_inference/weights/droid.pth" \
+#     --log-dir "./logs" \
+#     --num-gpus 1 \
+#     --num-proc-per-gpu 1 \
+#     --trajectory-length 1700 \
+#     --trajectory-overlap 100 \
+#     --min-trajectory-length 100 \
+#     --num-workers 24 \
+#     --replace-from "/store/swissai/a03/datasets/" \
+#     --replace-to "/capstor/scratch/cscs/pmartell/datasets/" \
+#     --exp-name "$EXP_NAME" \
+#     --no-profiler || true
 
 # Completion message
 # echo ""
