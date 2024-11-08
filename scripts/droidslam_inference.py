@@ -31,6 +31,7 @@ parser.add_argument("--trajectory-length", type=int, default=64)
 parser.add_argument("--trajectory-overlap", type=int, default=5)
 parser.add_argument("--num-workers", type=int, default=16)
 parser.add_argument("--min-trajectory-length", type=int, default=30)
+parser.add_argument("--file-list-idx", type=int, default=0)
 # constants
 parser.add_argument("--image-height", type=int, default=576)
 parser.add_argument("--image-width", type=int, default=1024)
@@ -107,15 +108,17 @@ class H5Dataset(Dataset):
 
         with h5py.File(self.current_path, "r") as file:
             image = file.get("video")[idx + self.index_offset.value]
-        
+
         with h5py.File(
-                os.path.join(
-                    os.path.dirname(self.current_path) + "_proc",
-                    f"depth_{os.path.basename(self.current_path)}",
-                ),
-                "r",
-            ) as file:
+            os.path.join(
+                os.path.dirname(self.current_path) + "_proc",
+                f"depth_{os.path.basename(self.current_path)}",
+            ),
+            "r",
+        ) as file:
             depth = file.get("depth")[idx + self.index_offset.value]
+            if "is_float16" in file and file["is_float16"][0] == 1:
+                depth = depth.astype(float) * 80
 
         if self.undistort:
             image = cv2.remap(image, self.mapx, self.mapy, cv2.INTER_LINEAR)
@@ -164,7 +167,8 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
     print(">>>>>>>>>>> NUMBER OF GPUs: ", torch.cuda.device_count())
 
     # just in case DroidSLAM internals use default
-    torch.cuda.set_device(f"cuda:{rank}")
+    # torch.cuda.set_device(f"cuda:{rank}")
+    torch.cuda.set_device("cuda")
 
     # define global
     v_file_idx = Value("i", 0)
@@ -302,7 +306,8 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
                         image_size=[crop_height, crop_width],
                         upsample=True,
                         buffer=args.trajectory_length,
-                        device=f"cuda:{rank}",
+                        # device=f"cuda:{rank}",
+                        device="cuda",
                     )
 
                     # assign new trajectory
@@ -396,7 +401,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
 
 if __name__ == "__main__":
 
-    mp.set_start_method("spawn")
+    # mp.set_start_method("spawn")
 
     args = parser.parse_args()
 
@@ -417,30 +422,36 @@ if __name__ == "__main__":
     else:
         with open(args.file_list, "r") as f:
             file_paths = f.read().splitlines()
+    # split up into 4 GPUs
+    split_pts = np.round(np.linspace(0, len(file_paths), 5)).astype(int)
+    file_paths = file_paths[split_pts[args.file_list_idx]: split_pts[args.file_list_idx + 1]]
+
     file_queue = mp.Queue()
 
     for file_idx in range(len(file_paths)):
         file_queue.put(file_idx)
-    for file_idx in range(args.num_gpus):
-        file_queue.put("DONE")
+    # for file_idx in range(args.num_gpus):
+    file_queue.put("DONE")
 
     os.makedirs(args.log_dir, exist_ok=True)
 
-    processes = []
-    for rank in range(args.num_gpus):
+    process_files(0, 0, args, file_queue, file_paths)
 
-        p = mp.Process(
-            target=process_files,
-            args=(
-                rank,
-                0,
-                args,
-                file_queue,
-                file_paths,
-            ),
-        )
-        p.start()
-        processes.append(p)
+    # processes = []
+    # for rank in range(args.num_gpus):
 
-    for p in processes:
-        p.join()
+    #     p = mp.Process(
+    #         target=process_files,
+    #         args=(
+    #             rank,
+    #             0,
+    #             args,
+    #             file_queue,
+    #             file_paths,
+    #         ),
+    #     )
+    #     p.start()
+    #     processes.append(p)
+
+    # for p in processes:
+    #     p.join()

@@ -206,6 +206,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                 depth_file.create_dataset(
                     "num_written", data=[num_written], dtype="int32"
                 )
+                depth_file.create_dataset("is_float16", data=[1], dtype="uint8")
 
                 write_idx = 0
                 depth_pred = []
