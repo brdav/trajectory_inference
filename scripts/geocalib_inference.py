@@ -51,17 +51,18 @@ class H5Dataset(Dataset):
 
     def __init__(self, file_paths):
         self.file_paths = file_paths
+        self.current_path = None
 
     def __getitem__(self, idx):
         # why fill dataset at getitem rather than init?
         # each worker (which are forked after the init) need to have their own file handle
-        if self.file_paths[self.file_idx.value] != self.current_path:
+        if self.current_path is None or self.file_paths[self.file_idx.value] != self.current_path:
             print(f"Geocalib - file change: {self.file_idx.value}")
             self.current_path = self.file_paths[self.file_idx.value]
         
         with h5py.File(self.current_path, "r") as file:
-            self.dataset = file.get("video")[idx]
-            return (self.dataset[idx].transpose(2, 0, 1) / 255.0).astype(np.float32)
+            dataset = file.get("video")[idx]
+            return (dataset.transpose(2, 0, 1) / 255.0).astype(np.float32)
 
 
 def init_fn(v_file_idx, worker_id):
@@ -170,7 +171,6 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                 if args.camera_model == "pinhole":
                     result = model.calibrate(
                         data, camera_model="pinhole", shared_intrinsics=True,
-                        num_steps=200
                     )
                     # no distortion parameters because we use pinhole model
                     K = result["camera"].K

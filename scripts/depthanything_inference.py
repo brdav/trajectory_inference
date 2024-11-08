@@ -81,11 +81,9 @@ class H5Dataset(Dataset):
         if self.file_paths[self.file_idx.value] != self.current_path:
             print(f"Depth - file change: {self.file_idx.value}")
             self.current_path = self.file_paths[self.file_idx.value]
-            self.file = h5py.File(self.current_path, "r")
-            self.dataset = self.file.get("video")[:]
-            self.file.close()
-            
-        img = self.dataset[idx] / 255.0
+        
+        with h5py.File(self.current_path, "r") as f:
+            img = f.get("video")[idx] / 255.0
         return self.transform({"image": img})["image"]
 
 
@@ -208,6 +206,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                 depth_pred = []
                 with torch.no_grad():
                     for data in data_loader:
+                        print(f"Depth - file: {file_idx}, idx: {write_idx}")
                         predictions = model.forward(data.to(f"cuda:{rank}"))
                         predictions = nn.functional.interpolate(
                             predictions[:, None],
@@ -227,7 +226,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
 
                         if (not args.no_profiler) and (rank == 0):
                             prof.step()
-
+                        
                 # dump the rest
                 depth_pred_np = torch.cat(depth_pred, dim=0).cpu().numpy()
                 depth_ds[write_idx:] = depth_pred_np

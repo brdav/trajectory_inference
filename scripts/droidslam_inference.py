@@ -66,16 +66,6 @@ class H5Dataset(Dataset):
         if self.file_paths[self.file_idx.value] != self.current_path:
             print(f"DroidSLAM - file change: {self.file_idx.value}")
             self.current_path = self.file_paths[self.file_idx.value]
-            with h5py.File(self.current_path, "r") as file:
-                self.dataset = file["video"][:]
-            with h5py.File(
-                os.path.join(
-                    os.path.dirname(self.current_path) + "_proc",
-                    f"depth_{os.path.basename(self.current_path)}",
-                ),
-                "r",
-            ) as file:
-                self.depth_dataset = file["depth"][:]
             # intrinsics
             with h5py.File(
                 os.path.join(
@@ -113,8 +103,17 @@ class H5Dataset(Dataset):
                 cy = K[1, 2] * self.resize_size[0] / self.image_size[0]
             self.intrinsics = np.array([fx, fy, cx, cy])
 
-        image = self.dataset[idx + self.index_offset.value]
-        depth = self.depth_dataset[idx + self.index_offset.value]
+        with h5py.File(self.current_path, "r") as file:
+            image = file.get("video")[idx + self.index_offset.value]
+        
+        with h5py.File(
+                os.path.join(
+                    os.path.dirname(self.current_path) + "_proc",
+                    f"depth_{os.path.basename(self.current_path)}",
+                ),
+                "r",
+            ) as file:
+            depth = file.get("depth")[idx + self.index_offset.value]
 
         if self.undistort:
             image = cv2.remap(image, self.mapx, self.mapy, cv2.INTER_LINEAR)

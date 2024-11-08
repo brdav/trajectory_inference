@@ -51,7 +51,7 @@ srun --nodes=$NODES \
     --log-dir "./logs" \
     --num-gpus "$NUM_GPUS" \
     --num-proc-per-gpu 1 \
-    --buffer-size 1024 \
+    --buffer-size 2048 \
     --batch-size 128 \
     --num-workers 24 \
     --encoder "vits" \
@@ -71,7 +71,7 @@ srun --nodes=$NODES \
     --log-dir "./logs" \
     --num-gpus 1 \
     --num-proc-per-gpu 1 \
-    --trajectory-length 1500 \
+    --trajectory-length 1700 \
     --trajectory-overlap 100 \
     --min-trajectory-length 100 \
     --num-workers 24 \
