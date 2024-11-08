@@ -1,4 +1,6 @@
 # ignore IDE files
+good_files.txt
+bad_files.txt
 weights/
 *.pth
 *.pyc

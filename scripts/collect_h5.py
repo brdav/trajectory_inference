@@ -12,21 +12,22 @@ BASE_DIR = Path("/store/swissai/a03/datasets")
 H5_DIRS = [
     "CCD/h5_files",
     "D2City",
-    "DAD",
+    "DAD/positive",
+    "DAD/negative",
     "DoTA",
-    "Drive360",
-    # "DrivingDojo_h5",  # undistort first --> README
-    "HondaHAD",
-    # "ONCE",  # undistort first --> README
+    "Drive360/h5_files",
     "OpenDV-YouTube/h5",
-    "YouTubeCrash",
-    "bdd100k",
-    "cityscapes_h5",
-    # "dad_streetaccident",
+    "YouTubeCrash/h5_files/accident",
+    "YouTubeCrash/h5_files/nonaccident",
+    "bdd100k/h5",
     "kitti_h5",
     "nuplan_h5",
-    # "nuscenes_h5",
-    # "HONDAHDD",  # not ready yet
+    "HondaHDD/extracted",
+    # # "DrivingDojo_h5",  # undistort first --> README
+    # "HondaHAD/had_data_h5",
+    # # "ONCE",  # undistort first --> README
+    # "cityscapes_h5",
+    # # "dad_streetaccident",
 ]
 
 NODES = 600

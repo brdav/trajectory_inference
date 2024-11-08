@@ -410,7 +410,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"]=str(args.file_list_idx)
+    # os.environ["CUDA_VISIBLE_DEVICES"]=str(args.file_list_idx)
 
     assert args.num_workers > 0
     assert args.min_trajectory_length <= args.trajectory_length
