@@ -13,6 +13,7 @@ from multiprocessing import Process, Queue, Value, get_start_method
 from torch.utils.data import Dataset, DataLoader, Sampler, get_worker_info
 from torch.profiler import profile, ProfilerActivity
 from lietorch import SO3
+
 # import multiprocessing as mp
 from collections import deque
 
@@ -26,7 +27,7 @@ parser.add_argument("--replace-from", type=str)
 parser.add_argument("--replace-to", type=str)
 parser.add_argument("--weights", type=str, default="./droid.pth")
 # tuning parameters
-parser.add_argument("--num-gpus", type=int, default=4)
+parser.add_argument("--num-gpus", type=int, default=1)
 parser.add_argument("--num-proc-per-gpu", type=int, default=1)
 parser.add_argument("--trajectory-length", type=int, default=64)
 parser.add_argument("--trajectory-overlap", type=int, default=5)
@@ -169,7 +170,6 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
 
     # just in case DroidSLAM internals use default
     # torch.cuda.set_device(f"cuda:{rank}")
-    torch.cuda.set_device("cuda")
 
     # define global
     v_file_idx = Value("i", 0)
@@ -407,6 +407,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    os.environ["CUDA_VISIBLE_DEVICES"]=str(args.file_list_idx)
+
     assert args.num_workers > 0
     assert args.min_trajectory_length <= args.trajectory_length
 
@@ -426,7 +428,9 @@ if __name__ == "__main__":
             file_paths = f.read().splitlines()
     # split up into 4 GPUs
     split_pts = np.round(np.linspace(0, len(file_paths), 5)).astype(int)
-    file_paths = file_paths[split_pts[args.file_list_idx]: split_pts[args.file_list_idx + 1]]
+    file_paths = file_paths[
+        split_pts[args.file_list_idx] : split_pts[args.file_list_idx + 1]
+    ]
 
     file_queue = deque()  # mp.Queue()
 
