@@ -213,7 +213,9 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                         )[:, 0]
                         # convert to uint16
                         predictions *= 65535 / 80
-                        predictions = torch.round(torch.clamp(predictions, min=0, max=65535))
+                        predictions = torch.round(
+                            torch.clamp(predictions, min=0, max=65535)
+                        ).to(int)
                         depth_pred.append(predictions)
                         if len(depth_pred) * args.batch_size >= args.buffer_size:
                             # dump buffer to file
