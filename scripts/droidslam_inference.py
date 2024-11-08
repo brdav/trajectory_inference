@@ -66,19 +66,8 @@ class H5Dataset(Dataset):
         # why fill dataset at getitem rather than init?
         # each worker (which are forked after the init) need to have their own file handle
         if self.file_paths[self.file_idx.value] != self.current_path:
+            print(f"DroidSLAM - file change: {self.file_idx.value}")
             self.current_path = self.file_paths[self.file_idx.value]
-            # video
-            self.file = h5py.File(self.current_path, "r")
-            self.dataset = self.file.get("video")
-            # depth
-            self.depth_file = h5py.File(
-                os.path.join(
-                    os.path.dirname(self.current_path) + "_proc",
-                    f"depth_{os.path.basename(self.current_path)}",
-                ),
-                "r",
-            )
-            self.depth_dataset = self.depth_file.get("depth")
             # intrinsics
             with h5py.File(
                 os.path.join(
@@ -116,8 +105,17 @@ class H5Dataset(Dataset):
                 cy = K[1, 2] * self.resize_size[0] / self.image_size[0]
             self.intrinsics = np.array([fx, fy, cx, cy])
 
-        image = self.dataset[idx + self.index_offset.value]
-        depth = self.depth_dataset[idx + self.index_offset.value]
+        with h5py.File(self.current_path, "r") as file:
+            image = file.get("video")[idx + self.index_offset.value]
+        
+        with h5py.File(
+                os.path.join(
+                    os.path.dirname(self.current_path) + "_proc",
+                    f"depth_{os.path.basename(self.current_path)}",
+                ),
+                "r",
+            ) as file:
+            depth = file.get("depth")[idx + self.index_offset.value]
 
         if self.undistort:
             image = cv2.remap(image, self.mapx, self.mapy, cv2.INTER_LINEAR)
