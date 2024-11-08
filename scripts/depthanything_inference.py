@@ -171,7 +171,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths, model):
                         continue
                     except Exception as e:
                         print(
-                            f"Depth H5 file for {file_path} seems to be corrupt. Will overwrite."
+                            f">>>>>>>>>>>> Depth H5 file for {file_path} seems to be corrupt. Will overwrite."
                         )
                         os.remove(
                             os.path.join(
@@ -330,3 +330,5 @@ if __name__ == "__main__":
 
     for p in processes:
         p.join()
+
+    print("!!!!!!!!!!!!! DONEEEEE - depth")

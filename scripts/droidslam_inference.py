@@ -119,6 +119,9 @@ class H5Dataset(Dataset):
             depth = file.get("depth")[idx + self.index_offset.value]
             if "is_float16" in file and file["is_float16"][0] == 1:
                 depth = depth.astype(float) * 80
+                assert depth.dtype == np.float16, f"inconsistent!!! depth dtype: {depth.dtype}. depth values: {depth}"
+            else:
+                assert depth.dtype == np.float32, f"inconsistent!!! depth dtype: {depth.dtype}"
 
         if self.undistort:
             image = cv2.remap(image, self.mapx, self.mapy, cv2.INTER_LINEAR)
@@ -455,3 +458,5 @@ if __name__ == "__main__":
 
     # for p in processes:
     #     p.join()
+
+    print("!!!!!!!!!!!!! DONEEEEE - droidslam")
