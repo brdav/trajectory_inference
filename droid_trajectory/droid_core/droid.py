@@ -21,6 +21,9 @@ class Droid:
         buffer=512,
         stereo=False,
         filter_thresh=2.4,
+        frontend_thresh=16.0,
+        backend_thresh=22.0,
+        keyframe_thresh=4.0,
         vis_save=False,
     ):
         super(Droid, self).__init__()
@@ -39,12 +42,12 @@ class Droid:
 
         # frontend process
         self.frontend = DroidFrontend(
-            self.net, self.video, device=device, upsample=upsample
+            self.net, self.video, device=device, upsample=upsample, keyframe_thresh=keyframe_thresh, frontend_thresh=frontend_thresh
         )
 
         # backend process
         self.backend = DroidBackend(
-            self.net, self.video, device=device, upsample=upsample
+            self.net, self.video, device=device, upsample=upsample, backend_thresh=backend_thresh
         )
 
         # post processor - fill in poses for non-keyframes

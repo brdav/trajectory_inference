@@ -5,5 +5,5 @@
 	path = depth_anything_v2
 	url = git@github.com:DepthAnything/Depth-Anything-V2.git
 [submodule "geocalib"]
-	path = geocalib
+	path = GeoCalib
 	url = git@github.com:cvg/GeoCalib.git
