@@ -386,7 +386,7 @@ def process_files(rank, p_rank, args, file_queue, file_paths):
                 while len(trajectories) > 1:
                     # cut ends to yield overlap=1
                     trajectories[0] = trajectories[0][
-                        : -(args.trajectory_overlap - 1) // 2
+                        : len(trajectories[0]) - (args.trajectory_overlap - 1) // 2
                     ]
                     trajectories[1] = trajectories[1][args.trajectory_overlap // 2 :]
                     T = np.linalg.solve(
