@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd $FILE_DIR
-find ~+ -type f -name "*.h5" > ./file_list.txt
+find ~+ -type f -name "*.h5" > $SCRATCH/trajectory_inference/file_list.txt
 
 
 cd $SCRATCH/trajectory_inference
