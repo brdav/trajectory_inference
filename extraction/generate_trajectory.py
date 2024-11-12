@@ -23,7 +23,8 @@ class TrajectoryExtractor:
                  image_width=1024,
                  encoder="vitl",
                  weights_dir=".",
-                 check_trajectory_integrity=False):
+                 check_trajectory_integrity=False,
+                 fps=10):
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -31,6 +32,7 @@ class TrajectoryExtractor:
         self.image_width = image_width
         self.weights_dir = weights_dir
         self.check_trajectory_integrity = check_trajectory_integrity
+        self.fps = fps
 
         # load calib model
         self.calib_model = GeoCalib()
@@ -96,8 +98,8 @@ class TrajectoryExtractor:
         trajectory = self.do_slam(video, depth_video, calib_matrix)
         if trajectory is not None:
             if self.check_trajectory_integrity:
-                this_pose = trajectory[:-10]
-                next_pose = trajectory[10:]
+                this_pose = trajectory[:-self.fps]
+                next_pose = trajectory[self.fps:]
                 relative_pose = np.linalg.solve(this_pose, next_pose)  # 1 second time delta
                 avg_steering_angle = np.median(np.abs(np.arctan2(relative_pose[:, 0, 3], relative_pose[:, 2, 3]) * 180 / np.pi))
                 if avg_steering_angle > 45:
