@@ -22,13 +22,15 @@ class TrajectoryExtractor:
                  image_height=576,
                  image_width=1024,
                  encoder="vitl",
-                 weights_dir="."):
+                 weights_dir=".",
+                 check_trajectory_integrity=False):
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.image_height = image_height
         self.image_width = image_width
         self.weights_dir = weights_dir
+        self.check_trajectory_integrity = check_trajectory_integrity
 
         # load calib model
         self.calib_model = GeoCalib()
@@ -92,8 +94,19 @@ class TrajectoryExtractor:
         calib_matrix = self.do_calib(video)
         depth_video = self.do_depth(video)
         trajectory = self.do_slam(video, depth_video, calib_matrix)
-        # return 2d trajectory
-        return np.array([trajectory[:, 0, 3], trajectory[:, 2, 3]]).T  # N x 2
+        if trajectory is not None:
+            if self.check_trajectory_integrity:
+                this_pose = trajectory[:-10]
+                next_pose = trajectory[10:]
+                relative_pose = np.linalg.solve(this_pose, next_pose)  # 1 second time delta
+                avg_steering_angle = np.median(np.abs(np.arctan2(relative_pose[:, 0, 3], relative_pose[:, 2, 3]) * 180 / np.pi))
+                if avg_steering_angle > 45:
+                    print("Avg steering angle > 45 degrees. Moving on")
+                    return None
+            # return 2d trajectory
+            return np.array([trajectory[:, 0, 3], trajectory[:, 2, 3]]).T  # N x 2
+        else:
+            return None
 
     @torch.no_grad()
     def do_calib(self, video):
@@ -130,40 +143,25 @@ class TrajectoryExtractor:
         cy = calib_matrix[1, 2] * self.resize_height / self.image_height
         intrinsics = np.array([fx, fy, cx, cy])
 
-        filter_thresh = 2.4
-        frontend_thresh = 16.0
-        backend_thresh = 22.0
-        keyframe_thresh = 4.0
-        while True:
-            try:
-                droid = Droid(
-                    weights=f"{self.weights_dir}/droid.pth",
-                    image_size=[self.crop_height, self.crop_width],
-                    upsample=True,
-                    buffer=512,
-                    device=self.device,
-                    filter_thresh=filter_thresh,
-                    frontend_thresh=frontend_thresh,
-                    backend_thresh=backend_thresh,
-                    keyframe_thresh=keyframe_thresh,
-                )
+        try:
+            droid = Droid(
+                weights=f"{self.weights_dir}/droid.pth",
+                image_size=[self.crop_height, self.crop_width],
+                upsample=True,
+                buffer=512,
+                device=self.device,
+            )
 
-                for idx, image, depth, intr in self.image_stream(video, depth_video, intrinsics, [self.resize_height, self.resize_width], [self.crop_height, self.crop_width]):
-                    droid.track(idx, image, depth, intr)
+            for idx, image, depth, intr in self.image_stream(video, depth_video, intrinsics, [self.resize_height, self.resize_width], [self.crop_height, self.crop_width]):
+                droid.track(idx, image, depth, intr)
 
-                # do global bundle adjustment
-                traj_est = droid.terminate(self.image_stream(video, depth_video, intrinsics, [self.resize_height, self.resize_width], [self.crop_height, self.crop_width]))
-                break
-            except Exception as e:
-                if filter_thresh > 0.1:
-                    filter_thresh /= 2.0
-                    frontend_thresh /= 2.0
-                    backend_thresh /= 2.0
-                    keyframe_thresh /= 2.0
-                else:
-                    raise e
-
-        traj_est = self.get_pose_matrix(traj_est)
+            # do global bundle adjustment
+            traj_est = droid.terminate(self.image_stream(video, depth_video, intrinsics, [self.resize_height, self.resize_width], [self.crop_height, self.crop_width]))
+            traj_est = self.get_pose_matrix(traj_est)
+        except Exception as e:
+            print("Extraction failed! Moving on")
+            traj_est = None
+        
         return traj_est
 
     def get_pose_matrix(self, traj):
@@ -212,7 +210,7 @@ if __name__ == "__main__":
         "$SCRATCH/generated/chunk_4.h5",
     ]
 
-    extractor = TrajectoryExtractor(encoder="vitl", weights_dir="/capstor/scratch/cscs/pmartell/trajectory_inference/weights")
+    extractor = TrajectoryExtractor(encoder="vitl", weights_dir="/capstor/scratch/cscs/pmartell/trajectory_inference/weights", check_trajectory_integrity=True)
 
     for file_path in file_paths:
         print(f"doing {file_path}...")
@@ -222,7 +220,8 @@ if __name__ == "__main__":
         # feed in video as N x H x W x 3
         trajectory_2d = extractor(video)  # returns N x 2 trajectory
 
-        plt.plot(trajectory_2d[:, 0], trajectory_2d[:, 1])
-        plt.gca().set_aspect('equal')
-        plt.savefig(f"trajectory_{os.path.basename(file_path)}.png")
-        plt.close()
+        if trajectory_2d is not None:
+            plt.plot(trajectory_2d[:, 0], trajectory_2d[:, 1])
+            plt.gca().set_aspect('equal')
+            plt.savefig(f"output/trajectory_{os.path.basename(file_path)}.png")
+            plt.close()
