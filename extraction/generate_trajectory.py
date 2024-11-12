@@ -205,26 +205,22 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     file_paths = [
-        "/cluster/scratch/sansara/generated/chunk_50.h5",
-        "/cluster/scratch/sansara/generated/chunk_150.h5",
-        "/cluster/scratch/sansara/generated/chunk_250.h5",
-        "/cluster/scratch/sansara/generated/chunk_350.h5",
-        "/cluster/scratch/sansara/generated/chunk_450.h5",
-        "/cluster/scratch/sansara/generated/chunk_550.h5",
-        "/cluster/scratch/sansara/generated/chunk_650.h5",
-        "/cluster/scratch/sansara/generated/chunk_750.h5",
-        "/cluster/scratch/sansara/generated/chunk_850.h5",
+        "$SCRATCH/generated/chunk_0.h5",
+        "$SCRATCH/generated/chunk_1.h5",
+        "$SCRATCH/generated/chunk_2.h5",
+        "$SCRATCH/generated/chunk_3.h5",
+        "$SCRATCH/generated/chunk_4.h5",
     ]
 
-    # weights: "/capstor/scratch/cscs/pmartell/trajectory_inference/weights"
-    extractor = TrajectoryExtractor(encoder="vits", weights_dir="/cluster/work/cvl/sansara/vision")
+    extractor = TrajectoryExtractor(encoder="vitl", weights_dir="/capstor/scratch/cscs/pmartell/trajectory_inference/weights")
 
     for file_path in file_paths:
         print(f"doing {file_path}...")
         with h5py.File(file_path, "r") as f:
             video = f["video"][:]
 
-        trajectory_2d = extractor(video)
+        # feed in video as N x H x W x 3
+        trajectory_2d = extractor(video)  # returns N x 2 trajectory
 
         plt.plot(trajectory_2d[:, 0], trajectory_2d[:, 1])
         plt.gca().set_aspect('equal')
